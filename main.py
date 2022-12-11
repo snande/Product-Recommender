@@ -22,6 +22,7 @@ if search_for != '':
     while progress < 100:
         page = page + 1
         if page == 10:
+            my_bar.progress(100)
             break
         link = base_link+"&page="+str(page)
         html_text = requests.get(link).text
