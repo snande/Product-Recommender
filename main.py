@@ -3,8 +3,11 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import numpy as np
+from PIL import Image
+from io import BytesIO
 
 search_for = st.text_input(label='Search for:', value='')
+# search_for = "honey"
 search_for = search_for.replace(' ', '%20')
 
 if search_for != '':
@@ -47,7 +50,8 @@ if search_for != '':
                 if raters < 30:
                     continue
                 reviewers = int(rateData.split()[3].replace(',',''))
-                df_list.append([descrs, prodLink, price, rating, raters, reviewers])
+                img_url = row.find('img', class_="_396cs4")['src']
+                df_list.append([descrs, prodLink, price, rating, raters, reviewers, img_url])
                 progress = progress + (100/(168))
                 my_bar.progress(int(progress) if int(progress)<100 else 100)
                 continue
@@ -59,7 +63,10 @@ if search_for != '':
                         header = prod.find('a', class_='s1Q9rs')
                         descrs = header['title']
                         prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0])
-                        price = int(prod.find('div', class_='_30jeq3').text[1:].replace(',', ''))
+                        pricebox = prod.find('div', class_='_30jeq3')
+                        if pricebox == None:
+                            continue
+                        price = int(pricebox.text[1:].replace(',', ''))
                         ratebox = prod.find('div', class_="_3LWZlK")
                         if ratebox == None:
                             continue
@@ -67,7 +74,8 @@ if search_for != '':
                         raters = int(prod.find('span', class_="_2_R_DZ").text[1:-1].replace(',',''))
                         if raters < 30:
                             continue
-                        df_list.append([descrs, prodLink, price, rating, raters, np.nan])
+                        img_url = prod.find('img', class_="_396cs4")['src']
+                        df_list.append([descrs, prodLink, price, rating, raters, np.nan, img_url])
                         progress = progress + (100/(160))
                         my_bar.progress(int(progress) if int(progress)<100 else 100)
                 else:
@@ -91,23 +99,75 @@ if search_for != '':
                         if raters < 30:
                             continue
                         reviewers = int(rateData.text.split()[3].replace(',',''))
-                        df_list.append([descrs, prodLink, price, rating, raters, reviewers])
+                        img_url = prod.find('img', class_="_2r_T1I")['src']
+                        df_list.append([descrs, prodLink, price, rating, raters, reviewers, img_url])
                         progress = progress + (100/(160))
                         my_bar.progress(int(progress) if int(progress)<100 else 100)
                 
                 
-    df = pd.DataFrame(df_list, columns=['Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers'])
+    df = pd.DataFrame(df_list, columns=['Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'img_url'])
+    df = df.drop_duplicates(subset=['Price', 'Rating', 'Raters'])
     df['Scaled Rating'] = df['Rating']*(1 - np.power(1.06, -1*df['Raters']))
-    df['VFM'] = df['Scaled Rating']*(np.sqrt(df['Price'].mean()))/np.sqrt(df['Price'])
-    df['composite'] = ((df['Scaled Rating']) * (np.sqrt(df['VFM'])))
-    df_vfm = df.sort_values(['VFM', 'Raters', 'Reviewers', 'composite', 'Scaled Rating'], axis=0, ascending=False).head(10)
-    df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(10)
-    df_com = df.sort_values(['composite', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM'], axis=0, ascending=False).head(10)
-    st.subheader("Products sorted by VFM")
-    st.dataframe(df_vfm)
+    df['VFM'] = (df['Scaled Rating']/(df['Scaled Rating'].mean()))*(np.sqrt(df['Price'].mean()))/np.sqrt(df['Price'])
+    df['composite'] = ((df['Scaled Rating']/(df['Scaled Rating'].mean())) * (np.sqrt(df['VFM'])/(np.sqrt(df['VFM'].mean()))))
+    df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(5)
+    df_vfm = df.sort_values(['VFM', 'Raters', 'Reviewers', 'composite', 'Scaled Rating'], axis=0, ascending=False).head(5)
+    df_com = df.sort_values(['composite', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM'], axis=0, ascending=False).head(5)
 
-    st.subheader("Products sorted by Scaled Rating")
-    st.dataframe(df_rat)
+    st.subheader("Best Products by Rating")
+    for i in range(len(df_rat)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_rat.iloc[i, 0]}]({df_rat.iloc[i, 1]})  
+                    **Price** : {df_rat.iloc[i, 2]} Rs.  
+                    **Rating** : {round(df_rat.iloc[i, 7], 2)}  
+                    **Value for Money** : {round(df_rat.iloc[i, 8], 2)}  
+                    **Composite Rating** : {round(df_rat.iloc[i, 9], 2)}  
+        
 
-    st.subheader("Products sorted by Composite Rating")
-    st.dataframe(df_com)
+                """)
+        r = requests.get(df_rat.iloc[i, 6])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+        
+
+    st.subheader("Best Products by Value for Money")
+    for i in range(len(df_vfm)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_vfm.iloc[i, 0]}]({df_rat.iloc[i, 1]})  
+                    **Price** : {df_vfm.iloc[i, 2]} Rs.  
+                    **Rating** : {round(df_vfm.iloc[i, 7], 2)}  
+                    **Value for Money** : {round(df_vfm.iloc[i, 8], 2)}  
+                    **Composite Rating** : {round(df_vfm.iloc[i, 9], 2)}  
+        
+
+                """)
+        r = requests.get(df_vfm.iloc[i, 6])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+
+    st.subheader("Best Products by Composite Rating")
+    for i in range(len(df_com)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_com.iloc[i, 0]}]({df_rat.iloc[i, 1]})  
+                    **Price** : {df_com.iloc[i, 2]} Rs.  
+                    **Rating** : {round(df_com.iloc[i, 7], 2)}  
+                    **Value for Money** : {round(df_com.iloc[i, 8], 2)}  
+                    **Composite Rating** : {round(df_com.iloc[i, 9], 2)}  
+        
+
+                """)
+        r = requests.get(df_com.iloc[i, 6])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+
+    st.subheader("Entire Data Extract")
+    st.dataframe(df[['Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM', 'composite']])
