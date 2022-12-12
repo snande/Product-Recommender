@@ -136,7 +136,7 @@ if search_for != '':
     st.subheader("Best Products by Value for Money")
     for i in range(len(df_vfm)):
         col1, col2 = st.columns([4, 1])
-        col1.write(f"""{i+1}. [{df_vfm.iloc[i, 0]}]({df_rat.iloc[i, 1]})  
+        col1.write(f"""{i+1}. [{df_vfm.iloc[i, 0]}]({df_vfm.iloc[i, 1]})  
                     **Price** : {df_vfm.iloc[i, 2]} Rs.  
                     **Rating** : {round(df_vfm.iloc[i, 7], 2)}  
                     **Value for Money** : {round(df_vfm.iloc[i, 8], 2)}  
@@ -154,7 +154,7 @@ if search_for != '':
     st.subheader("Best Products by Composite Rating")
     for i in range(len(df_com)):
         col1, col2 = st.columns([4, 1])
-        col1.write(f"""{i+1}. [{df_com.iloc[i, 0]}]({df_rat.iloc[i, 1]})  
+        col1.write(f"""{i+1}. [{df_com.iloc[i, 0]}]({df_com.iloc[i, 1]})  
                     **Price** : {df_com.iloc[i, 2]} Rs.  
                     **Rating** : {round(df_com.iloc[i, 7], 2)}  
                     **Value for Money** : {round(df_com.iloc[i, 8], 2)}  
