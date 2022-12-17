@@ -31,6 +31,7 @@ if search_for_orig != '':
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
+        print("Amazon", page)
         # print("\n\nPage :", page)
         # print("link:")
         # print(link, "\n\n")
@@ -109,6 +110,7 @@ if search_for_orig != '':
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
+        print("Flipkart", page)
 
         for row in soup.find_all('div', class_='_13oc-S'):
             if style == '':
