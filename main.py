@@ -20,7 +20,8 @@ if search_for_orig != '':
     df_list = []
     progress = 0.0
     page = 0
-    st.write("Amazon:")
+    amz_write = st.empty()
+    amz_write.write("Amazon : ")
     my_bar1 = st.progress(int(progress))
     while progress < 100:
         page = page + 1
@@ -31,7 +32,7 @@ if search_for_orig != '':
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
-        print("Amazon", page)
+        amz_write.write(f"Amazon : {page}")
         # print("\n\nPage :", page)
         # print("link:")
         # print(link, "\n\n")
@@ -99,7 +100,8 @@ if search_for_orig != '':
     style = ''
     progress = 0.0
     page = 0
-    st.write("Flipkart:")
+    flp_write = st.empty()
+    flp_write.write("Flipkart : ")
     my_bar2 = st.progress(int(progress))
     while progress < 100:
         page = page + 1
@@ -110,7 +112,7 @@ if search_for_orig != '':
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
-        print("Flipkart", page)
+        flp_write.write(f"Flipkart : {page}")
 
         for row in soup.find_all('div', class_='_13oc-S'):
             if style == '':
