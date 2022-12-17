@@ -21,6 +21,7 @@ if search_for_orig != '':
     df_list = []
     progress = 0.0
     page = 0
+    num_prod = 0
     amz_write = st.empty()
     amz_write.write("Amazon : ")
     my_bar1 = st.progress(int(progress))
@@ -31,10 +32,9 @@ if search_for_orig != '':
             break
         link = base_link+"&page="+str(page)
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
-        time.sleep(1)
+        # time.sleep(1)
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
-        amz_write.write(f"Amazon : {page}")
         # print("\n\nPage :", page)
         # print("link:")
         # print(link, "\n\n")
@@ -65,6 +65,8 @@ if search_for_orig != '':
                     continue
                 img_url = prod.find("img", class_="s-image")['src']
                 df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
+                num_prod = num_prod + 1
+                amz_write.write(f"Amazon : searched for {num_prod} products in {page} pages")
                 progress = progress + (100/(num_prod_search))
                 my_bar1.progress(int(progress) if int(progress)<100 else 100)
                 continue
@@ -87,6 +89,8 @@ if search_for_orig != '':
                     continue
                 img_url = prod.find("img", class_="s-image")['src']
                 df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
+                num_prod = num_prod + 1
+                amz_write.write(f"Amazon : searched for {num_prod} products in {page} pages")
                 progress = progress + (100/(num_prod_search))
                 my_bar1.progress(int(progress) if int(progress)<100 else 100)
                 continue
@@ -102,6 +106,7 @@ if search_for_orig != '':
     style = ''
     progress = 0.0
     page = 0
+    num_prod = 0
     flp_write = st.empty()
     flp_write.write("Flipkart : ")
     my_bar2 = st.progress(int(progress))
@@ -114,7 +119,6 @@ if search_for_orig != '':
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
         html_text = requests.get(link, headers=headers).text
         soup = BeautifulSoup(html_text, "html.parser")
-        flp_write.write(f"Flipkart : {page}")
 
         for row in soup.find_all('div', class_='_13oc-S'):
             if style == '':
@@ -135,6 +139,8 @@ if search_for_orig != '':
                 reviewers = int(rateData.split()[3].replace(',',''))
                 img_url = row.find('img', class_="_396cs4")['src']
                 df_list.append([platform, descrs, prodLink, price, rating, raters, reviewers, img_url])
+                num_prod = num_prod + 1
+                flp_write.write(f"Flipkart : searched for {num_prod} products in {page} pages")
                 progress = progress + (100/(num_prod_search))
                 my_bar2.progress(int(progress) if int(progress)<100 else 100)
                 continue
@@ -159,6 +165,8 @@ if search_for_orig != '':
                             continue
                         img_url = prod.find('img', class_="_396cs4")['src']
                         df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
+                        num_prod = num_prod + 1
+                        flp_write.write(f"Flipkart : searched for {num_prod} products in {page} pages")
                         progress = progress + (100/(num_prod_search))
                         my_bar2.progress(int(progress) if int(progress)<100 else 100)
                 else:
@@ -184,6 +192,8 @@ if search_for_orig != '':
                         reviewers = int(rateData.text.split()[3].replace(',',''))
                         img_url = prod.find('img', class_="_2r_T1I")['src']
                         df_list.append([platform, descrs, prodLink, price, rating, raters, reviewers, img_url])
+                        num_prod = num_prod + 1
+                        flp_write.write(f"Flipkart : searched for {num_prod} products in {page} pages")
                         progress = progress + (100/(0.3*num_prod_search))
                         my_bar2.progress(int(progress) if int(progress)<100 else 100)
                 
