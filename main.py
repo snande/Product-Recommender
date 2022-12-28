@@ -7,11 +7,13 @@ from PIL import Image
 from io import BytesIO
 import json
 import time
+from git import Repo
 
 search_for_orig = st.text_input(label='Search for:', value='')
 search_for_orig = search_for_orig.strip().lower()
 # search_for_orig = "Trimmer"
 num_prod_search = 160
+repo = Repo("./")
 
 if search_for_orig != '':
 
@@ -218,6 +220,10 @@ if search_for_orig != '':
         with open("./data/search/masterSearch.json", 'w') as f:
             json.dump(keydict, f)
         df.to_csv("./data/result/"+key+".csv", index=False)
+
+        repo.git.add(all=True)
+        repo.git.commit(m=f"Adding data for {search_for_orig}")
+        repo.remotes.origin.push()
 
     else:
         df = pd.read_csv("./data/result/"+key+".csv")
