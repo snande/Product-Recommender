@@ -14,6 +14,8 @@ search_for_orig = search_for_orig.strip().lower()
 # search_for_orig = "Trimmer"
 num_prod_search = 160
 repo = Repo("./")
+repo.config_writer().set_value("user", "name", "Satish Nande").release()
+repo.config_writer().set_value("user", "email", "satishnande23@gmail.com").release()
 
 if search_for_orig != '':
 
