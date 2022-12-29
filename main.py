@@ -5,26 +5,133 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 from io import BytesIO
-import json
 import time
-from git import Repo
+from azure.storage.blob import BlobServiceClient
+import logging
+from io import BytesIO
+
+
+logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+
+connection_string = st.secrets["database_connection"]["connection_string"]
+container_name = st.secrets["database_connection"]["container_name"]
+masterSearchFileName = st.secrets["database_connection"]["masterSearchFileName"]
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+container_client = blob_service_client.get_container_client(container=container_name)
+
+downlodData = container_client.download_blob(masterSearchFileName).readall()
+keydict = pd.read_json(BytesIO(downlodData), dtype={"Search":str, "Time":np.float32, "Key":str})
 
 search_for_orig = st.text_input(label='Search for:', value='')
 search_for_orig = search_for_orig.strip().lower()
 # search_for_orig = "Trimmer"
 num_prod_search = 160
-repo = Repo("./")
-repo.config_writer().set_value("user", "name", "Satish Nande").release()
-repo.config_writer().set_value("user", "email", "satishnande23@gmail.com").release()
+refresh = False
+displayBox = None
+
+def display_data(df):
+    df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(5)
+    df_vfm = df.sort_values(['VFM', 'Raters', 'Reviewers', 'composite', 'Scaled Rating'], axis=0, ascending=False).head(5)
+    df_com = df.sort_values(['composite', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM'], axis=0, ascending=False).head(5)
+
+    st.subheader("Best Products by Rating")
+    for i in range(len(df_rat)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_rat.iloc[i, 1]}]({df_rat.iloc[i, 2]})  
+                    **Platform** : {df_rat.iloc[i, 0]}  
+                    **Price** : {df_rat.iloc[i, 3]} Rs.  
+                    **Rating** : {round(df_rat.iloc[i, 8], 2)}  
+                    **Value for Money** : {round(df_rat.iloc[i, 9], 2)}  
+                    **Composite Rating** : {round(df_rat.iloc[i, 10], 2)}  
+        
+
+                """)
+        r = requests.get(df_rat.iloc[i, 7])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+        
+
+    st.subheader("Best Products by Value for Money")
+    for i in range(len(df_vfm)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_vfm.iloc[i, 1]}]({df_vfm.iloc[i, 2]})  
+                    **Platform** : {df_vfm.iloc[i, 0]}                      
+                    **Price** : {df_vfm.iloc[i, 3]} Rs.  
+                    **Rating** : {round(df_vfm.iloc[i, 8], 2)}  
+                    **Value for Money** : {round(df_vfm.iloc[i, 9], 2)}  
+                    **Composite Rating** : {round(df_vfm.iloc[i, 10], 2)}  
+        
+
+                """)
+        r = requests.get(df_vfm.iloc[i, 7])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+
+    st.subheader("Best Products by Composite Rating")
+    for i in range(len(df_com)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"""{i+1}. [{df_com.iloc[i, 1]}]({df_com.iloc[i, 2]})  
+                    **Platform** : {df_com.iloc[i, 0]}  
+                    **Price** : {df_com.iloc[i, 3]} Rs.  
+                    **Rating** : {round(df_com.iloc[i, 8], 2)}  
+                    **Value for Money** : {round(df_com.iloc[i, 9], 2)}  
+                    **Composite Rating** : {round(df_com.iloc[i, 10], 2)}  
+        
+
+                """)
+        r = requests.get(df_com.iloc[i, 7])
+        img = Image.open(BytesIO(r.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)
+
+    st.subheader("Entire Data Extract")
+    st.dataframe(df[['platform', 'Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM', 'composite']])
+
+
 
 if search_for_orig != '':
 
-    with open("./data/search/masterSearch.json", 'r') as f:
-        keydict = json.load(f)
-    key = keydict.get(search_for_orig, "None")
+    key = (keydict.loc[keydict["Search"]==search_for_orig, "Key"].iloc[0] 
+            if search_for_orig in keydict["Search"].values else "None")
 
-    if key == "None":
-    
+
+    if ((key != "None") and (refresh==False)):
+
+        epochtime, num_prod1, num_prod2, page1, page2 = key.split("_")
+        restime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(epochtime)))
+        currtime = time.time()
+        numdays = int((currtime - int(epochtime))/(24*60*60))
+        displayBox = st.empty()
+        with displayBox.container():
+            col1, col2 = st.columns([4, 1])
+            col1.write(f"Showing result as of {restime} ({numdays} days ago)")
+            refresh = col2.button("Refresh")
+
+            resultFileName = "projects/productRecommendor/data/result/"+key+".json"
+            downlodData = container_client.download_blob(resultFileName).readall()
+            df = (pd.read_json(BytesIO(downlodData), 
+                                dtype={"platform":str,"Desc":str,"Link":str,"Price":int,"Rating":float,
+                                        "Raters":int,"Reviewers":int,"img_url":str,
+                                        "Scaled Rating":float,"VFM":float,"composite":float}))
+
+            st.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
+            st.progress(100)
+            st.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
+            st.progress(100)
+            display_data(df)
+
+    if ((key == "None") or (refresh==True)):
+
+        if refresh==True:
+            displayBox.empty()
         platform = "Amazon"
         search_for = search_for_orig.replace(' ', '+')
         base_link = ("https://www.amazon.in/s?k=" + search_for + 
@@ -34,8 +141,9 @@ if search_for_orig != '':
         progress = 0.0
         page1 = 0
         num_prod1 = 0
-        restime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        st.write(f"Showing result as of {restime}")
+        restime = time.time()
+        formatime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(restime))
+        st.write(f"Showing result as of {formatime} (now)")
         amz_write = st.empty()
         amz_write.write("Amazon : ")
         my_bar1 = st.progress(int(progress))
@@ -217,84 +325,16 @@ if search_for_orig != '':
         df['VFM'] = (df['Scaled Rating']/(df['Scaled Rating'].median()))*(np.sqrt(df['Price'].median()))/np.sqrt(df['Price'])
         df['composite'] = ((df['Scaled Rating']/(df['Scaled Rating'].median())) * (np.sqrt(df['VFM'])/(np.sqrt(df['VFM'].median()))))
 
-        key = "_".join([str(time.time()).split(".")[0], str(num_prod1), str(num_prod2), str(page1), str(page2)])
-        keydict[search_for_orig] = key
-        with open("./data/search/masterSearch.json", 'w') as f:
-            json.dump(keydict, f)
-        df.to_csv("./data/result/"+key+".csv", index=False)
+        display_data(df)
 
-        repo.git.add(all=True)
-        repo.git.commit(m=f"Adding data for {search_for_orig}")
-        repo.remotes.origin.push()
-
-    else:
-        df = pd.read_csv("./data/result/"+key+".csv")
-        epochtime, num_prod1, num_prod2, page1, page2 = key.split("_")
-        restime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(epochtime)))
-        st.write(f"Showing result as of {restime}")
-        st.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
-        st.progress(100)
-        st.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
-        st.progress(100)
-    
-    df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(5)
-    df_vfm = df.sort_values(['VFM', 'Raters', 'Reviewers', 'composite', 'Scaled Rating'], axis=0, ascending=False).head(5)
-    df_com = df.sort_values(['composite', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM'], axis=0, ascending=False).head(5)
-
-    st.subheader("Best Products by Rating")
-    for i in range(len(df_rat)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"""{i+1}. [{df_rat.iloc[i, 1]}]({df_rat.iloc[i, 2]})  
-                    **Price** : {df_rat.iloc[i, 3]} Rs.  
-                    **Rating** : {round(df_rat.iloc[i, 8], 2)}  
-                    **Value for Money** : {round(df_rat.iloc[i, 9], 2)}  
-                    **Composite Rating** : {round(df_rat.iloc[i, 10], 2)}  
+        key = "_".join([str(restime).split(".")[0], str(num_prod1), str(num_prod2), str(page1), str(page2)])
+        keydict.loc[len(keydict), ["Search", "Time", "Key"]] = [search_for_orig, restime, key]
+        keydict = keydict.sort_values(["Time", "Search"], ascending=False)
         
-
-                """)
-        r = requests.get(df_rat.iloc[i, 7])
-        img = Image.open(BytesIO(r.content))
-        width, height = img.size
-        resize_len = width if width >= height else height
-        img = img.resize((resize_len, resize_len))
-        col2.image(img)
+        resultFileName = "projects/productRecommendor/data/result/"+key+".json"
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=resultFileName)
+        _ = blob_client.upload_blob(df.to_json(), overwrite=True)
         
-
-    st.subheader("Best Products by Value for Money")
-    for i in range(len(df_vfm)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"""{i+1}. [{df_vfm.iloc[i, 1]}]({df_vfm.iloc[i, 2]})  
-                    **Price** : {df_vfm.iloc[i, 3]} Rs.  
-                    **Rating** : {round(df_vfm.iloc[i, 8], 2)}  
-                    **Value for Money** : {round(df_vfm.iloc[i, 9], 2)}  
-                    **Composite Rating** : {round(df_vfm.iloc[i, 10], 2)}  
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=masterSearchFileName)
+        _ = blob_client.upload_blob(keydict.to_json(), overwrite=True)
         
-
-                """)
-        r = requests.get(df_vfm.iloc[i, 7])
-        img = Image.open(BytesIO(r.content))
-        width, height = img.size
-        resize_len = width if width >= height else height
-        img = img.resize((resize_len, resize_len))
-        col2.image(img)
-
-    st.subheader("Best Products by Composite Rating")
-    for i in range(len(df_com)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"""{i+1}. [{df_com.iloc[i, 1]}]({df_com.iloc[i, 2]})  
-                    **Price** : {df_com.iloc[i, 3]} Rs.  
-                    **Rating** : {round(df_com.iloc[i, 8], 2)}  
-                    **Value for Money** : {round(df_com.iloc[i, 9], 2)}  
-                    **Composite Rating** : {round(df_com.iloc[i, 10], 2)}  
-        
-
-                """)
-        r = requests.get(df_com.iloc[i, 7])
-        img = Image.open(BytesIO(r.content))
-        width, height = img.size
-        resize_len = width if width >= height else height
-        img = img.resize((resize_len, resize_len))
-        col2.image(img)
-
-    st.subheader("Entire Data Extract")
-    st.dataframe(df[['platform', 'Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM', 'composite']])
