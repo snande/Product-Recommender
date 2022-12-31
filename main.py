@@ -22,11 +22,11 @@ container_client = blob_service_client.get_container_client(container=container_
 downlodData = container_client.download_blob(masterSearchFileName).readall()
 keydict = pd.read_json(BytesIO(downlodData), dtype={"Search":str, "Time":np.float32, "Key":str})
 
+# search_for_orig = "trimmer"
 search_for_orig = st.text_input(label='Search for:', value='')
 search_for_orig = search_for_orig.strip().lower()
-# search_for_orig = "Trimmer"
+
 num_prod_search = 160
-refresh = False
 displayBox = None
 
 def display_data(df):
@@ -103,7 +103,7 @@ if search_for_orig != '':
             if search_for_orig in keydict["Search"].values else "None")
 
 
-    if ((key != "None") and (refresh==False)):
+    if ((key != "None")):
 
         epochtime, num_prod1, num_prod2, page1, page2 = key.split("_")
         restime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(epochtime)))
@@ -115,23 +115,22 @@ if search_for_orig != '':
             col1.write(f"Showing result as of {restime} ({numdays} days ago)")
             refresh = col2.button("Refresh")
 
-            resultFileName = "projects/productRecommendor/data/result/"+key+".json"
-            downlodData = container_client.download_blob(resultFileName).readall()
-            df = (pd.read_json(BytesIO(downlodData), 
-                                dtype={"platform":str,"Desc":str,"Link":str,"Price":int,"Rating":float,
-                                        "Raters":int,"Reviewers":int,"img_url":str,
-                                        "Scaled Rating":float,"VFM":float,"composite":float}))
+            if refresh == False:
+                resultFileName = "projects/productRecommendor/data/result/"+key+".json"
+                downlodData = container_client.download_blob(resultFileName).readall()
+                df = (pd.read_json(BytesIO(downlodData), 
+                                    dtype={"platform":str,"Desc":str,"Link":str,"Price":int,"Rating":float,
+                                            "Raters":int,"Reviewers":int,"img_url":str,
+                                            "Scaled Rating":float,"VFM":float,"composite":float}))
 
-            st.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
-            st.progress(100)
-            st.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
-            st.progress(100)
-            display_data(df)
+                st.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
+                st.progress(100)
+                st.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
+                st.progress(100)
+                display_data(df)
 
     if ((key == "None") or (refresh==True)):
 
-        if refresh==True:
-            displayBox.empty()
         platform = "Amazon"
         search_for = search_for_orig.replace(' ', '+')
         base_link = ("https://www.amazon.in/s?k=" + search_for + 
@@ -143,6 +142,8 @@ if search_for_orig != '':
         num_prod1 = 0
         restime = time.time()
         formatime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(restime))
+        if refresh==True:
+            displayBox.empty()
         st.write(f"Showing result as of {formatime} (now)")
         amz_write = st.empty()
         amz_write.write("Amazon : ")
@@ -321,6 +322,7 @@ if search_for_orig != '':
                     
         df = pd.DataFrame(df_list, columns=['platform', 'Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'img_url'])
         df = df.drop_duplicates(subset=['Price', 'Rating', 'Raters'])
+        df = df[(df["Price"] > df["Price"].quantile(0.025)) & (df["Price"] < df["Price"].quantile(0.975))]
         df['Scaled Rating'] = df['Rating']*(1 - np.power(1.25, -1*np.sqrt(df['Raters'])))
         df['VFM'] = (df['Scaled Rating']/(df['Scaled Rating'].median()))*(np.sqrt(df['Price'].median()))/np.sqrt(df['Price'])
         df['composite'] = ((df['Scaled Rating']/(df['Scaled Rating'].median())) * (np.sqrt(df['VFM'])/(np.sqrt(df['VFM'].median()))))
