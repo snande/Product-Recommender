@@ -28,6 +28,7 @@ search_for_orig = search_for_orig.strip().lower()
 
 num_prod_search = 160
 displayBox = None
+refresh = False
 
 def display_data(df):
     df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(5)
