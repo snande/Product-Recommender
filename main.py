@@ -323,7 +323,11 @@ if search_for_orig != '':
                     
         df = pd.DataFrame(df_list, columns=['platform', 'Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'img_url'])
         df = df.drop_duplicates(subset=['Price', 'Rating', 'Raters'])
-        df = df[(df["Price"] > df["Price"].quantile(0.025)) & (df["Price"] < df["Price"].quantile(0.975))]
+        df = df[(((df["Price"] > df["Price"].quantile(0.025)) & 
+                  (df["Price"] < df["Price"].quantile(0.985)) &
+                  (df["platform"]=="Amazon")) |
+                  (df["platform"]=="Flipkart")
+                 )]
         df['Scaled Rating'] = df['Rating']*(1 - np.power(1.25, -1*np.sqrt(df['Raters'])))
         df['VFM'] = (df['Scaled Rating']/(df['Scaled Rating'].median()))*(np.sqrt(df['Price'].median()))/np.sqrt(df['Price'])
         df['composite'] = ((df['Scaled Rating']/(df['Scaled Rating'].median())) * (np.sqrt(df['VFM'])/(np.sqrt(df['VFM'].median()))))
