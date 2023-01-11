@@ -31,9 +31,9 @@ displayBox = None
 refresh = False
 
 def display_data(df):
-    df_rat = df.sort_values(['Scaled Rating', 'Raters', 'Reviewers', 'composite', 'VFM'], axis=0, ascending=False).head(5)
-    df_vfm = df.sort_values(['VFM', 'Raters', 'Reviewers', 'composite', 'Scaled Rating'], axis=0, ascending=False).head(5)
-    df_com = df.sort_values(['composite', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM'], axis=0, ascending=False).head(5)
+    df_rat = df.sort_values(['Scaled Rating', 'composite', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False).head(5)
+    df_vfm = df.sort_values(['VFM', 'composite', 'Scaled Rating', 'Raters', 'Reviewers'], axis=0, ascending=False).head(5)
+    df_com = df.sort_values(['composite', 'Scaled Rating', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False).head(5)
 
     st.subheader("Best Products by Rating")
     for i in range(len(df_rat)):
