@@ -237,7 +237,7 @@ if search_for_orig != '':
             page2 = page2 + 1
             if page2 == 10:
                 my_bar2.progress(100)
-                break
+                break   
             link = base_link+"&page="+str(page2)
             headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
             html_text = requests.get(link, headers=headers).text
@@ -302,7 +302,8 @@ if search_for_orig != '':
                             # sleep(1.5)
                             prod_text = requests.get(prodLink).text
                             prod_soup = BeautifulSoup(prod_text, "html.parser")
-                            ratebox = prod_soup.find('div', class_='_3LWZlK _3uSWvT')
+                            # ratebox = prod_soup.find('div', class_='_3LWZlK _3uSWvT')
+                            ratebox = prod_soup.find('div', class_='_3LWZlK')
                             if ratebox == None:
                                 continue
                             rating = float(ratebox.text)
