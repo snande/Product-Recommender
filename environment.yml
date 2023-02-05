@@ -1,12 +1,15 @@
 name: personal-productRecommendor
 channels:
-  - anaconda
   - conda-forge
+  - anaconda
   - defaults
 dependencies:
   - _libgcc_mutex
   - abseil-cpp
   - altair
+  - appnope
+  - argon2-cffi
+  - argon2-cffi-bindings
   - arrow-cpp
   - asttokens
   - attrs
@@ -14,10 +17,12 @@ dependencies:
   - aws-c-event-stream
   - aws-checksums
   - aws-sdk-cpp
+  - azure-core
   - azure-storage-blob
   - backcall
   - beautifulsoup4
   - blas
+  - bleach
   - blinker
   - boost-cpp
   - bottleneck
@@ -32,11 +37,13 @@ dependencies:
   - cffi
   - charset-normalizer
   - click
+  - colorama
   - commonmark
   - cryptography
   - dataclasses
   - debugpy
   - decorator
+  - defusedxml
   - entrypoints
   - executing
   - freetype
@@ -54,60 +61,76 @@ dependencies:
   - intel-openmp
   - ipykernel
   - ipython
+  - ipython_genutils
   - ipywidgets
+  - isodate
   - jedi
   - jinja2
   - jpeg
   - jsonschema
   - jupyter_client
   - jupyter_core
+  - jupyterlab_pygments
   - jupyterlab_widgets
   - krb5
   - lcms2
   - ld_impl_linux-64
   - lerc
+  - libboost
   - libbrotlicommon
   - libbrotlidec
   - libbrotlienc
   - libcurl
+  - libcxx
   - libdeflate
   - libedit
   - libev
   - libevent
   - libffi
+  - libiconv
   - libnghttp2
   - libpng
   - libprotobuf
   - libsodium
+  - libsqlite
   - libssh2
   - libthrift
   - libtiff
   - libuuid
   - libwebp
   - libwebp-base
+  - libzlib
   - lz4-c
   - markupsafe
   - matplotlib-inline
+  - mistune
   - mkl
   - mkl-service
   - mkl_fft
   - mkl_random
+  - msrest
+  - nbclient
+  - nbconvert
   - nbformat
   - ncurses
   - nest-asyncio
+  - notebook
   - numexpr
   - numpy
   - numpy-base
+  - oauthlib
   - openssl
   - orc
   - packaging
   - pandas
+  - pandocfilters
   - parso
   - pexpect
   - pickleshare
   - pillow
   - pip
   - pkgutil-resolve-name
+  - prometheus_client
   - prompt-toolkit
   - protobuf
   - psutil
@@ -117,6 +140,7 @@ dependencies:
   - pycparser
   - pydeck
   - pygments
+  - pyjwt
   - pympler
   - pyopenssl
   - pyparsing
@@ -129,13 +153,14 @@ dependencies:
   - python_abi
   - pytz
   - pytz-deprecation-shim
-  - pyyaml
   - pyzmq
   - re2
   - readline
   - requests
+  - requests-oauthlib
   - rich
   - semver
+  - send2trash
   - setuptools
   - six
   - smmap
@@ -144,11 +169,14 @@ dependencies:
   - sqlite
   - stack_data
   - streamlit
+  - terminado
+  - testpath
   - tk
   - toml
   - toolz
   - tornado
   - traitlets
+  - typing-extensions
   - typing_extensions
   - tzdata
   - tzlocal
@@ -157,6 +185,7 @@ dependencies:
   - validators
   - watchdog
   - wcwidth
+  - webencodings
   - wheel
   - widgetsnbextension
   - xz
@@ -165,4 +194,6 @@ dependencies:
   - zipp
   - zlib
   - zstd
-prefix: /opt/conda/envs/productRecommendor
+  - pip:
+      - pyyaml
+prefix: /Users/snande/opt/anaconda3/envs/personal-productRecommendor
