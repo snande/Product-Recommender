@@ -8,7 +8,6 @@ from io import BytesIO
 import time
 from azure.storage.blob import BlobServiceClient
 import logging
-from io import BytesIO
 
 
 logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
