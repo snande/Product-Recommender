@@ -1,5 +1,0 @@
-streamlit
-azure-storage-blob
-beautifulsoup4
-pandas
-pillow
