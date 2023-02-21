@@ -1,0 +1,6 @@
+python=3.9
+streamlit
+azure-storage-blob
+beautifulsoup4
+pandas
+pillow

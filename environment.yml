@@ -1,9 +1,0 @@
-name: personal-productRecommendor
-dependencies:
-  - python=3.9
-  - conda-forge::streamlit
-  - conda-forge::azure-storage-blob
-  - anaconda::beautifulsoup4
-  - anaconda::pandas
-  - anaconda::pillow
-prefix: /Users/snande/opt/anaconda3/envs/personal-productRecommendor
