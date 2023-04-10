@@ -161,61 +161,62 @@ if search_for_orig != '':
             # print("link:")
             # print(link, "\n\n")
 
-            prods = soup.find_all("div", class_="s-card-container s-overflow-hidden aok-relative puis-expand-height puis-include-content-margin puis s-latency-cf-section s-card-border")
-            if len(prods) != 0:
-                for prod in prods:
-                    desc_box1 = prod.find("h5", class_="s-line-clamp-1")
-                    desc_box2 = prod.find("span", class_="a-size-base-plus a-color-base a-text-normal")
-                    descrs = ""
-                    if (desc_box1 == None) and (desc_box2 == None):
-                        continue
-                    if desc_box1 != None:
-                        descrs = desc_box1.text + " | "
-                    if desc_box2 != None:
-                        descrs = descrs + desc_box2.text
-                    prodLink = "https://www.amazon.in" + (prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0])
-                    pricebox = prod.find("span", class_="a-price-whole")
-                    if pricebox == None:
-                        continue
-                    price = int(round(float(pricebox.text.replace(',', '')), 0))
-                    ratebox = prod.find("span", class_="a-icon-alt")
-                    if ratebox == None:
-                        continue
-                    rating = float(ratebox.text.split()[0])
-                    raters = int(prod.find("span", class_="a-size-base s-underline-text").text.replace(',', '').replace('(', '').replace(')', ''))
-                    if raters < 30:
-                        continue
-                    img_url = prod.find("img", class_="s-image")['src']
-                    df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
-                    num_prod1 = num_prod1 + 1
-                    amz_write.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
-                    progress = progress + (100/(num_prod_search))
-                    my_bar1.progress(int(progress) if int(progress)<100 else 100)
+            prods = soup.find_all("div", class_="a-section a-spacing-base")
+            if len(prods) == 0:
+                prods = soup.find_all("div", class_="a-section a-spacing-base a-text-center")
+            for prod in prods:
+                desc_box1 = prod.find("h5", class_="s-line-clamp-1")
+                desc_box2 = prod.find("span", class_="a-size-base-plus a-color-base a-text-normal")
+                descrs = ""
+                if (desc_box1 == None) and (desc_box2 == None):
                     continue
+                if desc_box1 != None:
+                    descrs = desc_box1.text + " | "
+                if desc_box2 != None:
+                    descrs = descrs + desc_box2.text
+                prodLink = "https://www.amazon.in" + (prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0])
+                pricebox = prod.find("span", class_="a-price-whole")
+                if pricebox == None:
+                    continue
+                price = int(round(float(pricebox.text.replace(',', '')), 0))
+                ratebox = prod.find("span", class_="a-icon-alt")
+                if ratebox == None:
+                    continue
+                rating = float(ratebox.text.split()[0])
+                raters = int(prod.find("span", class_="a-size-base s-underline-text").text.replace(',', '').replace('(', '').replace(')', ''))
+                if raters < 30:
+                    continue
+                img_url = prod.find("img", class_="s-image")['src']
+                df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
+                num_prod1 = num_prod1 + 1
+                amz_write.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
+                progress = progress + (100/(num_prod_search))
+                my_bar1.progress(int(progress) if int(progress)<100 else 100)
+                continue
 
-            else:
-                prods = soup.find_all("div", class_="s-card-container s-overflow-hidden aok-relative puis-include-content-margin puis s-latency-cf-section s-card-border")    
-                for prod in prods:
-                    descrs = prod.find("span", class_="a-size-medium a-color-base a-text-normal").text
-                    prodLink = "https://www.amazon.in" + prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0]
-                    pricebox = prod.find("span", class_="a-price-whole")
-                    if pricebox == None:
-                        continue
-                    price = int(round(float(pricebox.text.replace(',', '')), 0))
-                    ratebox = prod.find("span", class_="a-icon-alt")
-                    if ratebox == None:
-                        continue
-                    rating = float(ratebox.text.split()[0])
-                    raters = int(prod.find("span", class_="a-size-base s-underline-text").text.replace(',', '').replace('(', '').replace(')', ''))
-                    if raters < 30:
-                        continue
-                    img_url = prod.find("img", class_="s-image")['src']
-                    df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
-                    num_prod1 = num_prod1 + 1
-                    amz_write.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
-                    progress = progress + (100/(num_prod_search))
-                    my_bar1.progress(int(progress) if int(progress)<100 else 100)
-                    continue
+            # else:
+            #     prods = soup.find_all("div", class_="s-card-container s-overflow-hidden aok-relative puis-include-content-margin puis s-latency-cf-section s-card-border")    
+            #     for prod in prods:
+            #         descrs = prod.find("span", class_="a-size-medium a-color-base a-text-normal").text
+            #         prodLink = "https://www.amazon.in" + prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0]
+            #         pricebox = prod.find("span", class_="a-price-whole")
+            #         if pricebox == None:
+            #             continue
+            #         price = int(round(float(pricebox.text.replace(',', '')), 0))
+            #         ratebox = prod.find("span", class_="a-icon-alt")
+            #         if ratebox == None:
+            #             continue
+            #         rating = float(ratebox.text.split()[0])
+            #         raters = int(prod.find("span", class_="a-size-base s-underline-text").text.replace(',', '').replace('(', '').replace(')', ''))
+            #         if raters < 30:
+            #             continue
+            #         img_url = prod.find("img", class_="s-image")['src']
+            #         df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
+            #         num_prod1 = num_prod1 + 1
+            #         amz_write.write(f"Amazon : searched for {num_prod1} products in {page1} pages")
+            #         progress = progress + (100/(num_prod_search))
+            #         my_bar1.progress(int(progress) if int(progress)<100 else 100)
+            #         continue
 
         
         platform = "Flipkart"
