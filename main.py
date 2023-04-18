@@ -164,16 +164,22 @@ if search_for_orig != '':
             prods = soup.find_all("div", class_="a-section a-spacing-base")
             if len(prods) == 0:
                 prods = soup.find_all("div", class_="a-section a-spacing-base a-text-center")
+            if len(prods) == 0:
+                prods = soup.find_all(lambda tag: tag.name == 'div' and tag.get('class') == ["a-section"])
+            
             for prod in prods:
                 desc_box1 = prod.find("h5", class_="s-line-clamp-1")
                 desc_box2 = prod.find("span", class_="a-size-base-plus a-color-base a-text-normal")
+                desc_box3 = prod.find("span", class_="a-size-medium a-color-base a-text-normal")
                 descrs = ""
-                if (desc_box1 == None) and (desc_box2 == None):
+                if (desc_box1 == None) and (desc_box2 == None) and (desc_box3 == None):
                     continue
                 if desc_box1 != None:
                     descrs = desc_box1.text + " | "
                 if desc_box2 != None:
                     descrs = descrs + desc_box2.text
+                if desc_box3 != None:
+                    descrs = descrs + desc_box3.text
                 prodLink = "https://www.amazon.in" + (prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0])
                 pricebox = prod.find("span", class_="a-price-whole")
                 if pricebox == None:
