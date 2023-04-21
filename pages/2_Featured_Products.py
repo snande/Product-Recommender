@@ -128,9 +128,12 @@ if len(newKeyList) > 0:
     df_vfm = pd.concat([df_vfm, df]).drop_duplicates("Link")
     df_com = pd.concat([df_com, df]).drop_duplicates("Link")
 
-    df_rat = (df_rat.sort_values(['Scaled Rating', 'composite', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False).iloc[:1000])
-    df_vfm = (df_vfm.sort_values(['VFM', 'composite', 'Scaled Rating', 'Raters', 'Reviewers'], axis=0, ascending=False).iloc[:1000])
-    df_com = (df_com.sort_values(['composite', 'Scaled Rating', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False).iloc[:1000])
+    df_rat = (df_rat.sort_values(['Scaled Rating', 'composite', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False)
+              .iloc[:1000].reset_index(drop=True))
+    df_vfm = (df_vfm.sort_values(['VFM', 'composite', 'Scaled Rating', 'Raters', 'Reviewers'], axis=0, ascending=False)
+              .iloc[:1000].reset_index(drop=True))
+    df_com = (df_com.sort_values(['composite', 'Scaled Rating', 'VFM', 'Raters', 'Reviewers'], axis=0, ascending=False)
+              .iloc[:1000].reset_index(drop=True))
     
     resultFileName = "projects/productRecommendor/data/store/data_rat.json"
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=resultFileName)
