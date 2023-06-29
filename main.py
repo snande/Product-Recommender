@@ -157,10 +157,10 @@ if search_for_orig != '':
             headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
             html_text = "Service Unavailable"
             req_num = 0
-            while ("Service Unavailable" in html_text[:50]) & (req_num < 5):
+            while ("Service Unavailable" in html_text[:50]) & (req_num < 10):
                 print(req_num)
                 html_text = requests.get(link, headers=headers).text
-                time.sleep(req_num)
+                time.sleep(0.5)
                 req_num = req_num+1
             soup = BeautifulSoup(html_text, "html.parser")
             # print("\n\nPage :", page)
