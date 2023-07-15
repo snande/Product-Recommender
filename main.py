@@ -320,7 +320,7 @@ if search_for_orig != '':
                                 continue
                             rating = float(ratebox.text)
                             rateData = prod_soup.find('span', class_="_2_R_DZ")
-                            if rateData == None:
+                            if (rateData == None) or (len(rateData.text.split()) < 4):
                                 continue
                             raters = int(rateData.text.split()[0].replace(',',''))
                             if raters < 30:
