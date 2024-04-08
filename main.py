@@ -251,6 +251,7 @@ if search_for_orig != '':
         flp_write.write("Flipkart : ")
         my_bar2 = st.progress(int(progress))
         while progress < 100:
+            print("started search in flipkart")
             page2 = page2 + 1
             if page2 == 10:
                 my_bar2.progress(100)
@@ -268,6 +269,7 @@ if search_for_orig != '':
                     prodLink = 'https://www.flipkart.com' + (row.find('a', class_='_1fQZEK')['href'].split('?')[0])
                     pricebox = row.find('div', class_='_30jeq3 _1_WHN1')
                     if pricebox is None:
+                        print("pricebox not found hence exiting at 272")
                         continue
                     price = int(pricebox.text[1:].replace(',', ''))
                     ratebox = row.find('div', class_='_3LWZlK')
