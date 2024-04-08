@@ -24,6 +24,12 @@ keydict = pd.read_json(BytesIO(downlodData), dtype={"Search":str, "Time":np.floa
 # search_for_orig = "trimmer"
 search_for_orig = st.text_input(label='Search for:', value='')
 search_for_orig = search_for_orig.strip().lower()
+headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0", 
+           "Accept-Encoding":"gzip, deflate", 
+           "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+           "DNT":"1",
+           "Connection":"close", 
+           "Upgrade-Insecure-Requests":"1"}
 
 num_prod_search = 160
 displayBox = None
@@ -115,7 +121,7 @@ if search_for_orig != '':
             col1.write(f"Showing result as of {restime} ({numdays} days ago)")
             refresh = col2.button("Refresh")
 
-            if refresh == False:
+            if refresh is False:
                 resultFileName = "projects/productRecommendor/data/result/"+key+".json"
                 downlodData = container_client.download_blob(resultFileName).readall()
                 df = (pd.read_json(BytesIO(downlodData), 
@@ -129,7 +135,7 @@ if search_for_orig != '':
                 st.progress(100)
                 display_data(df)
 
-    if ((key == "None") or (refresh==True)):
+    if ((key == "None") or (refresh is True)):
 
         platform = "Amazon"
         search_for = search_for_orig.replace(' ', '+')
@@ -142,7 +148,7 @@ if search_for_orig != '':
         num_prod1 = 0
         restime = time.time()
         formatime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(restime))
-        if refresh==True:
+        if refresh is True:
             displayBox.empty()
         st.write(f"Showing result as of {formatime} (now)")
         amz_write = st.empty()
@@ -154,14 +160,13 @@ if search_for_orig != '':
                 my_bar1.progress(100)
                 break
             link = base_link+"&page="+str(page1)
-            headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
             html_text = "Service Unavailable"
             req_num = 0
-            while ("Service Unavailable" in html_text[:50]) & (req_num < 10):
+            while ("Service Unavailable" in html_text[:50]) & (req_num < 30):
                 print(req_num)
                 html_text = requests.get(link, headers=headers).text
-                time.sleep(0.5)
                 req_num = req_num+1
+                time.sleep(0.01*req_num)
             soup = BeautifulSoup(html_text, "html.parser")
             # print("\n\nPage :", page)
             # print("link:")
@@ -178,21 +183,21 @@ if search_for_orig != '':
                 desc_box2 = prod.find("span", class_="a-size-base-plus a-color-base a-text-normal")
                 desc_box3 = prod.find("span", class_="a-size-medium a-color-base a-text-normal")
                 descrs = ""
-                if (desc_box1 == None) and (desc_box2 == None) and (desc_box3 == None):
+                if (desc_box1 is None) and (desc_box2 is None) and (desc_box3 is None):
                     continue
-                if desc_box1 != None:
+                if desc_box1 is not None:
                     descrs = desc_box1.text + " | "
-                if desc_box2 != None:
+                if desc_box2 is not None:
                     descrs = descrs + desc_box2.text
-                if desc_box3 != None:
+                if desc_box3 is not None:
                     descrs = descrs + desc_box3.text
                 prodLink = "https://www.amazon.in" + (prod.find("a", class_="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal")['href'].split("/ref=")[0])
                 pricebox = prod.find("span", class_="a-price-whole")
-                if pricebox == None:
+                if pricebox is None:
                     continue
                 price = int(round(float(pricebox.text.replace(',', '')), 0))
                 ratebox = prod.find("span", class_="a-icon-alt")
-                if ratebox == None:
+                if ratebox is None:
                     continue
                 rating = float(ratebox.text.split()[0])
                 raters = int(prod.find("span", class_="a-size-base s-underline-text").text.replace(',', '').replace('(', '').replace(')', ''))
@@ -251,7 +256,6 @@ if search_for_orig != '':
                 my_bar2.progress(100)
                 break   
             link = base_link+"&page="+str(page2)
-            headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"} 
             html_text = requests.get(link, headers=headers).text
             soup = BeautifulSoup(html_text, "html.parser")
 
@@ -262,9 +266,12 @@ if search_for_orig != '':
                 if style == 'width:100%':
                     descrs = row.find('div', class_='_4rR01T').text
                     prodLink = 'https://www.flipkart.com' + (row.find('a', class_='_1fQZEK')['href'].split('?')[0])
-                    price = int(row.find('div', class_='_30jeq3 _1_WHN1').text[1:].replace(',', ''))
+                    pricebox = row.find('div', class_='_30jeq3 _1_WHN1')
+                    if pricebox is None:
+                        continue
+                    price = int(pricebox.text[1:].replace(',', ''))
                     ratebox = row.find('div', class_='_3LWZlK')
-                    if ratebox == None:
+                    if ratebox is None:
                         continue
                     rating = float(ratebox.text)
                     rateData = row.find('span', class_="_2_R_DZ").text
@@ -288,11 +295,11 @@ if search_for_orig != '':
                             descrs = header['title']
                             prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0])
                             pricebox = prod.find('div', class_='_30jeq3')
-                            if pricebox == None:
+                            if pricebox is None:
                                 continue
                             price = int(pricebox.text[1:].replace(',', ''))
                             ratebox = prod.find('div', class_="_3LWZlK")
-                            if ratebox == None:
+                            if ratebox is None:
                                 continue
                             rating = float(ratebox.text)
                             raters = int(prod.find('span', class_="_2_R_DZ").text[1:-1].replace(',',''))
@@ -316,11 +323,11 @@ if search_for_orig != '':
                             prod_soup = BeautifulSoup(prod_text, "html.parser")
                             # ratebox = prod_soup.find('div', class_='_3LWZlK _3uSWvT')
                             ratebox = prod_soup.find('div', class_='_3LWZlK')
-                            if ratebox == None:
+                            if ratebox is None:
                                 continue
                             rating = float(ratebox.text)
                             rateData = prod_soup.find('span', class_="_2_R_DZ")
-                            if (rateData == None) or (len(rateData.text.split()) < 4):
+                            if (rateData is None) or (len(rateData.text.split()) < 4):
                                 continue
                             raters = int(rateData.text.split()[0].replace(',',''))
                             if raters < 30:
