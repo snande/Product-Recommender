@@ -262,7 +262,9 @@ if search_for_orig != '':
             html_text = requests.get(link, headers=headers).text
             soup = BeautifulSoup(html_text, "html.parser")
 
-            for row in soup.find_all('div', class_='_13oc-S'):
+            allRows = soup.find_all('div', class_='_13oc-S')
+            status_write.write(f"checking {len(allRows)} rows for page number {page2}")
+            for row in allRows:
                 if style == '':
                     style = row.find('div')['style']
                 
