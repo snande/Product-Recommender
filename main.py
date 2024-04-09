@@ -31,12 +31,13 @@ amazonHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0
                 "Connection":"close", 
                 "Upgrade-Insecure-Requests":"1"}
 
-flipkartHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36", 
-                    "Accept-Encoding":"gzip, deflate", 
-                    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "DNT":"1",
-                    "Connection":"close", 
-                    "Upgrade-Insecure-Requests":"1"}
+flipkartHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/66.0", 
+                    # "Accept-Encoding":"gzip, deflate", 
+                    # "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    # "DNT":"1",
+                    # "Connection":"close", 
+                    # "Upgrade-Insecure-Requests":"1"
+                    }
 
 num_prod_search = 20 # 160
 displayBox = None
@@ -246,10 +247,12 @@ if search_for_orig != '':
         
         platform = "Flipkart"
         search_for = search_for_orig.replace(' ', '%20')
-        base_link = ("https://www.flipkart.com/search?q=" + search_for + 
-                    "&sort=popularity&p%5B%5D=facets.fulfilled_by%255B%255D%3DPlus%2B%2528FAssured%2529" +
-                    "&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove" +
-                    "&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock")
+        base_link = ("https://www.flipkart.com/search?q=" + search_for 
+                    #  + 
+                    # "&sort=popularity&p%5B%5D=facets.fulfilled_by%255B%255D%3DPlus%2B%2528FAssured%2529" +
+                    # "&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove" +
+                    # "&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock"
+                    )
 
         style = ''
         progress = 0.0
