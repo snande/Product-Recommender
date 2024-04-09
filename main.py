@@ -273,7 +273,7 @@ if search_for_orig != '':
             while (status!=200) & (req_num < 30):
                 req_num = req_num+1
                 status_write.write(f"attempt number {req_num}, for page number {page1}, received status {status} in last attempt")
-                response = requests.get(link, headers=flipkartHeaders)
+                response = requests.get(link)
                 status = response.status_code
                 time.sleep(0.01*req_num)
             html_text = response.text
