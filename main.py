@@ -153,6 +153,7 @@ if search_for_orig != '':
         st.write(f"Showing result as of {formatime} (now)")
         amz_write = st.empty()
         amz_write.write("Amazon : ")
+        status_write = st.empty()
         my_bar1 = st.progress(int(progress))
         while progress < 100:
             page1 = page1 + 1
@@ -163,7 +164,7 @@ if search_for_orig != '':
             html_text = "Service Unavailable"
             req_num = 0
             while ("Service Unavailable" in html_text[:50]) & (req_num < 30):
-                print(req_num)
+                status_write.write(f"attempt number {req_num}, for page number {page1}")
                 html_text = requests.get(link, headers=headers).text
                 req_num = req_num+1
                 time.sleep(0.01*req_num)
@@ -249,13 +250,14 @@ if search_for_orig != '':
         num_prod2 = 0
         flp_write = st.empty()
         flp_write.write("Flipkart : ")
+        status_write = st.empty()
         my_bar2 = st.progress(int(progress))
         while progress < 100:
-            print("started search in flipkart")
             page2 = page2 + 1
             if page2 == 10:
                 my_bar2.progress(100)
                 break   
+            status_write.write(f"Working on page number {page2}")
             link = base_link+"&page="+str(page2)
             html_text = requests.get(link, headers=headers).text
             soup = BeautifulSoup(html_text, "html.parser")
@@ -269,11 +271,12 @@ if search_for_orig != '':
                     prodLink = 'https://www.flipkart.com' + (row.find('a', class_='_1fQZEK')['href'].split('?')[0])
                     pricebox = row.find('div', class_='_30jeq3 _1_WHN1')
                     if pricebox is None:
-                        print("pricebox not found hence exiting at 272")
+                        status_write.write("continuing at pricebox")
                         continue
                     price = int(pricebox.text[1:].replace(',', ''))
                     ratebox = row.find('div', class_='_3LWZlK')
                     if ratebox is None:
+                        status_write.write("continuing at ratebox")
                         continue
                     rating = float(ratebox.text)
                     rateData = row.find('span', class_="_2_R_DZ").text
@@ -298,10 +301,12 @@ if search_for_orig != '':
                             prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0])
                             pricebox = prod.find('div', class_='_30jeq3')
                             if pricebox is None:
+                                status_write.write("continuing at pricebox")
                                 continue
                             price = int(pricebox.text[1:].replace(',', ''))
                             ratebox = prod.find('div', class_="_3LWZlK")
                             if ratebox is None:
+                                status_write.write("continuing at ratebox")
                                 continue
                             rating = float(ratebox.text)
                             raters = int(prod.find('span', class_="_2_R_DZ").text[1:-1].replace(',',''))
@@ -326,6 +331,7 @@ if search_for_orig != '':
                             # ratebox = prod_soup.find('div', class_='_3LWZlK _3uSWvT')
                             ratebox = prod_soup.find('div', class_='_3LWZlK')
                             if ratebox is None:
+                                status_write.write("continuing at ratebox")
                                 continue
                             rating = float(ratebox.text)
                             rateData = prod_soup.find('span', class_="_2_R_DZ")
