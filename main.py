@@ -24,12 +24,19 @@ keydict = pd.read_json(BytesIO(downlodData), dtype={"Search":str, "Time":np.floa
 # search_for_orig = "trimmer"
 search_for_orig = st.text_input(label='Search for:', value='')
 search_for_orig = search_for_orig.strip().lower()
-headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0", 
-           "Accept-Encoding":"gzip, deflate", 
-           "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-           "DNT":"1",
-           "Connection":"close", 
-           "Upgrade-Insecure-Requests":"1"}
+amazonHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0", 
+                "Accept-Encoding":"gzip, deflate", 
+                "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "DNT":"1",
+                "Connection":"close", 
+                "Upgrade-Insecure-Requests":"1"}
+
+flipkartHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36", 
+                    "Accept-Encoding":"gzip, deflate", 
+                    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "DNT":"1",
+                    "Connection":"close", 
+                    "Upgrade-Insecure-Requests":"1"}
 
 num_prod_search = 20 # 160
 displayBox = None
@@ -165,7 +172,7 @@ if search_for_orig != '':
             req_num = 0
             while ("Service Unavailable" in html_text[:50]) & (req_num < 30):
                 status_write.write(f"attempt number {req_num}, for page number {page1}")
-                html_text = requests.get(link, headers=headers).text
+                html_text = requests.get(link, headers=amazonHeaders).text
                 req_num = req_num+1
                 time.sleep(0.01*req_num)
             soup = BeautifulSoup(html_text, "html.parser")
@@ -260,7 +267,7 @@ if search_for_orig != '':
             status_write.write(f"Working on page number {page2}")
             link = base_link+"&page="+str(page2)
             status_write.write(link)
-            html_text = requests.get(link, headers=headers).text
+            html_text = requests.get(link, headers=flipkartHeaders).text
             status_write.write(html_text[:50])
             soup = BeautifulSoup(html_text, "html.parser")
 
