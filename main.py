@@ -282,6 +282,7 @@ if search_for_orig != '':
                     rateData = row.find('span', class_="_2_R_DZ").text
                     raters = int(rateData.split()[0].replace(',',''))
                     if raters < 30:
+                        status_write.write("continuing at raters")
                         continue
                     reviewers = int(rateData.split()[3].replace(',',''))
                     img_url = row.find('img', class_="_396cs4")['src']
@@ -311,6 +312,7 @@ if search_for_orig != '':
                             rating = float(ratebox.text)
                             raters = int(prod.find('span', class_="_2_R_DZ").text[1:-1].replace(',',''))
                             if raters < 30:
+                                status_write.write("continuing at raters")
                                 continue
                             img_url = prod.find('img', class_="_396cs4")['src']
                             df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
@@ -336,9 +338,11 @@ if search_for_orig != '':
                             rating = float(ratebox.text)
                             rateData = prod_soup.find('span', class_="_2_R_DZ")
                             if (rateData is None) or (len(rateData.text.split()) < 4):
+                                status_write.write("continuing at ratedata")
                                 continue
                             raters = int(rateData.text.split()[0].replace(',',''))
                             if raters < 30:
+                                status_write.write("continuing at raters")
                                 continue
                             reviewers = int(rateData.text.split()[3].replace(',',''))
                             img_url = prod.find('img', class_="_2r_T1I")['src']
