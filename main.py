@@ -171,9 +171,9 @@ if search_for_orig != '':
             html_text = "Service Unavailable"
             req_num = 0
             while ("Service Unavailable" in html_text[:50]) & (req_num < 30):
+                req_num = req_num+1
                 status_write.write(f"attempt number {req_num}, for page number {page1}")
                 html_text = requests.get(link, headers=amazonHeaders).text
-                req_num = req_num+1
                 time.sleep(0.01*req_num)
             soup = BeautifulSoup(html_text, "html.parser")
             # print("\n\nPage :", page)
@@ -266,9 +266,10 @@ if search_for_orig != '':
                 break   
             link = base_link+"&page="+str(page2)
             status = 0
-            while (status!=200) & (req_num <= 30):
+            req_num = 0
+            while (status!=200) & (req_num < 30):
                 req_num = req_num+1
-                status_write.write(f"attempt number {req_num}, for page number {page1}")
+                status_write.write(f"attempt number {req_num}, for page number {page1}, received status {status} in last attempt")
                 response = requests.get(link, headers=flipkartHeaders)
                 status = response.status_code
                 time.sleep(0.01*req_num)
