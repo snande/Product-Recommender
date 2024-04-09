@@ -31,7 +31,7 @@ headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Geck
            "Connection":"close", 
            "Upgrade-Insecure-Requests":"1"}
 
-num_prod_search = 160
+num_prod_search = 20 # 160
 displayBox = None
 refresh = False
 
@@ -262,6 +262,7 @@ if search_for_orig != '':
             html_text = requests.get(link, headers=headers).text
             soup = BeautifulSoup(html_text, "html.parser")
 
+            status_write.write(html_text[:50])
             allRows = soup.find_all('div', class_='_13oc-S')
             status_write.write(f"checking {len(allRows)} rows for page number {page2}")
             for row in allRows:
