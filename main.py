@@ -264,11 +264,15 @@ if search_for_orig != '':
             if page2 == 10:
                 my_bar2.progress(100)
                 break   
-            status_write.write(f"Working on page number {page2}")
             link = base_link+"&page="+str(page2)
-            status_write.write(link)
-            html_text = requests.get(link, headers=flipkartHeaders).text
-            status_write.write(html_text[:50])
+            status = 0
+            while (status!=200) & (req_num <= 30):
+                req_num = req_num+1
+                status_write.write(f"attempt number {req_num}, for page number {page1}")
+                response = requests.get(link, headers=flipkartHeaders)
+                status = response.status_code
+                time.sleep(0.01*req_num)
+            html_text = response.text
             soup = BeautifulSoup(html_text, "html.parser")
 
             # status_write.write(soup[:50])
