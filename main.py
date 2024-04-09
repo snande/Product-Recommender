@@ -259,10 +259,12 @@ if search_for_orig != '':
                 break   
             status_write.write(f"Working on page number {page2}")
             link = base_link+"&page="+str(page2)
+            status_write.write(link)
             html_text = requests.get(link, headers=headers).text
+            status_write.write(html_text[:50])
             soup = BeautifulSoup(html_text, "html.parser")
 
-            status_write.write(html_text[:50])
+            status_write.write(soup[:50])
             allRows = soup.find_all('div', class_='_13oc-S')
             status_write.write(f"checking {len(allRows)} rows for page number {page2}")
             for row in allRows:
