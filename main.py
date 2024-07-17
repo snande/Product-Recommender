@@ -40,11 +40,11 @@ amazonHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0
                 "Upgrade-Insecure-Requests":"1"}
 
 flipkartHeaders = {"User-Agent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0", 
-                    "Accept-Encoding":"gzip, deflate", 
-                    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "DNT":"1",
-                    "Connection":"close", 
-                    "Upgrade-Insecure-Requests":"1"
+                    # "Accept-Encoding":"gzip, deflate", 
+                    # "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    # "DNT":"1",
+                    # "Connection":"close", 
+                    # "Upgrade-Insecure-Requests":"1"
                     }
 
 num_prod_search = 160
