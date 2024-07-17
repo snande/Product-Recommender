@@ -8,7 +8,15 @@ from io import BytesIO
 import time
 from azure.storage.blob import BlobServiceClient
 import logging
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
+
+session = requests.Session()
+retry = Retry(connect=3, backoff_factor=0.5)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 
@@ -32,14 +40,14 @@ amazonHeaders = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0
                 "Upgrade-Insecure-Requests":"1"}
 
 flipkartHeaders = {"User-Agent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0", 
-                    # "Accept-Encoding":"gzip, deflate", 
-                    # "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    # "DNT":"1",
-                    # "Connection":"close", 
-                    # "Upgrade-Insecure-Requests":"1"
+                    "Accept-Encoding":"gzip, deflate", 
+                    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "DNT":"1",
+                    "Connection":"close", 
+                    "Upgrade-Insecure-Requests":"1"
                     }
 
-num_prod_search = 20 # 160
+num_prod_search = 160
 displayBox = None
 refresh = False
 
@@ -60,7 +68,7 @@ def display_data(df):
         
 
                 """)
-        r = requests.get(df_rat.iloc[i, 7])
+        r = session.get(df_rat.iloc[i, 7])
         img = Image.open(BytesIO(r.content))
         width, height = img.size
         resize_len = width if width >= height else height
@@ -80,7 +88,7 @@ def display_data(df):
         
 
                 """)
-        r = requests.get(df_vfm.iloc[i, 7])
+        r = session.get(df_vfm.iloc[i, 7])
         img = Image.open(BytesIO(r.content))
         width, height = img.size
         resize_len = width if width >= height else height
@@ -99,7 +107,7 @@ def display_data(df):
         
 
                 """)
-        r = requests.get(df_com.iloc[i, 7])
+        r = session.get(df_com.iloc[i, 7])
         img = Image.open(BytesIO(r.content))
         width, height = img.size
         resize_len = width if width >= height else height
@@ -109,6 +117,29 @@ def display_data(df):
     st.subheader("Entire Data Extract")
     st.dataframe(df[['platform', 'Desc', 'Link', 'Price', 'Rating', 'Raters', 'Reviewers', 'Scaled Rating', 'VFM', 'composite']])
 
+
+FlipAllRows = '_75nlfW'
+
+FlipWid100Desc = 'KzDlHZ'
+FlipWid100Prodlnk = 'CGtC98'
+FlipWid100Pricebox = 'Nx9bqj _4b5DiR'
+FlipWid100Ratebox = 'XQDdHH'
+FlipWid100Ratedata = "Wphh3N"
+FlipWid100Imgurl = "DByuf4"
+
+FlipWid25Cat1ProdsInRow = 'slAVV4'
+FlipWid25Cat1Header = 'wjcEIp'
+FlipWid25Cat1Pricebox = 'Nx9bqj'
+FlipWid25Cat1Ratebox = 'XQDdHH'
+FlipWid25Cat1Raters = 'Wphh3N'
+FlipWid25Cat1Imgurl = 'DByuf4'
+
+FlipWid25Cat2ProdsInRow = '_1sdMkc'
+FlipWid25Cat2Header = 'WKTcLC'
+FlipWid25Cat2Pricebox = 'Nx9bqj'
+FlipWid25Cat2Ratebox = 'XQDdHH'
+FlipWid25Cat2Raters = 'Wphh3N'
+FlipWid25Cat2Imgurl = '_53J4C'
 
 
 if search_for_orig != '':
@@ -174,8 +205,8 @@ if search_for_orig != '':
             while ("Service Unavailable" in html_text[:50]) & (req_num < 30):
                 req_num = req_num+1
                 status_write.write(f"attempt number {req_num}, for page number {page1}")
-                html_text = requests.get(link, headers=amazonHeaders).text
-                time.sleep(0.01*req_num)
+                html_text = session.get(link, headers=amazonHeaders).text
+                # time.sleep(0.01*req_num)
             soup = BeautifulSoup(html_text, "html.parser")
             # print("\n\nPage :", page)
             # print("link:")
@@ -248,10 +279,10 @@ if search_for_orig != '':
         platform = "Flipkart"
         search_for = search_for_orig.replace(' ', '%20')
         base_link = ("https://www.flipkart.com/search?q=" + search_for 
-                    #  + 
-                    # "&sort=popularity&p%5B%5D=facets.fulfilled_by%255B%255D%3DPlus%2B%2528FAssured%2529" +
-                    # "&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove" +
-                    # "&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock"
+                     + 
+                    "&sort=popularity&p%5B%5D=facets.fulfilled_by%255B%255D%3DPlus%2B%2528FAssured%2529" +
+                    "&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove" +
+                    "&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock"
                     )
 
         style = ''
@@ -272,40 +303,40 @@ if search_for_orig != '':
             req_num = 0
             while (status!=200) & (req_num < 30):
                 req_num = req_num+1
-                status_write.write(f"attempt number {req_num}, for page number {page1}, received status {status} in last attempt")
-                response = requests.get(link)
+                response = session.get(link, headers=flipkartHeaders)
                 status = response.status_code
-                time.sleep(0.01*req_num)
+                status_write.write(f"attempt number {req_num}, for page number {page2}, received status {status} in last attempt")
+                # time.sleep(0.01*req_num)
             html_text = response.text
             soup = BeautifulSoup(html_text, "html.parser")
 
             # status_write.write(soup[:50])
-            allRows = soup.find_all('div', class_='_13oc-S')
+            allRows = soup.find_all('div', class_=FlipAllRows)
             status_write.write(f"checking {len(allRows)} rows for page number {page2}")
             for row in allRows:
                 if style == '':
                     style = row.find('div')['style']
                 
                 if style == 'width:100%':
-                    descrs = row.find('div', class_='_4rR01T').text
-                    prodLink = 'https://www.flipkart.com' + (row.find('a', class_='_1fQZEK')['href'].split('?')[0])
-                    pricebox = row.find('div', class_='_30jeq3 _1_WHN1')
+                    descrs = row.find('div', class_=FlipWid100Desc).text
+                    prodLink = 'https://www.flipkart.com' + (row.find('a', class_=FlipWid100Prodlnk)['href'].split('?')[0])
+                    pricebox = row.find('div', class_=FlipWid100Pricebox)
                     if pricebox is None:
                         status_write.write("continuing at pricebox")
                         continue
                     price = int(pricebox.text[1:].replace(',', ''))
-                    ratebox = row.find('div', class_='_3LWZlK')
+                    ratebox = row.find('div', class_=FlipWid100Ratebox)
                     if ratebox is None:
                         status_write.write("continuing at ratebox")
                         continue
                     rating = float(ratebox.text)
-                    rateData = row.find('span', class_="_2_R_DZ").text
+                    rateData = row.find('span', class_=FlipWid100Ratedata).text
                     raters = int(rateData.split()[0].replace(',',''))
                     if raters < 30:
                         status_write.write("continuing at raters")
                         continue
                     reviewers = int(rateData.split()[3].replace(',',''))
-                    img_url = row.find('img', class_="_396cs4")['src']
+                    img_url = row.find('img', class_=FlipWid100Imgurl)['src']
                     df_list.append([platform, descrs, prodLink, price, rating, raters, reviewers, img_url])
                     num_prod2 = num_prod2 + 1
                     flp_write.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
@@ -314,49 +345,47 @@ if search_for_orig != '':
                     continue
                     
                 elif style == 'width:25%':
-                    prods = row.find_all('div', class_='_4ddWXP')
+                    prods = row.find_all('div', class_=FlipWid25Cat1ProdsInRow)
                     if len(prods) > 0:
                         for prod in prods:
-                            header = prod.find('a', class_='s1Q9rs')
+                            header = prod.find('a', class_=FlipWid25Cat1Header)
                             descrs = header['title']
-                            prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0])
-                            pricebox = prod.find('div', class_='_30jeq3')
+                            prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0]) + '?marketplace=FLIPKART'
+                            pricebox = prod.find('div', class_=FlipWid25Cat1Pricebox)
                             if pricebox is None:
                                 status_write.write("continuing at pricebox")
                                 continue
                             price = int(pricebox.text[1:].replace(',', ''))
-                            ratebox = prod.find('div', class_="_3LWZlK")
+                            ratebox = prod.find('div', class_=FlipWid25Cat1Ratebox)
                             if ratebox is None:
                                 status_write.write("continuing at ratebox")
                                 continue
                             rating = float(ratebox.text)
-                            raters = int(prod.find('span', class_="_2_R_DZ").text[1:-1].replace(',',''))
+                            raters = int(prod.find('span', class_=FlipWid25Cat1Raters).text[1:-1].replace(',',''))
                             if raters < 30:
                                 status_write.write("continuing at raters")
                                 continue
-                            img_url = prod.find('img', class_="_396cs4")['src']
+                            img_url = prod.find('img', class_=FlipWid25Cat1Imgurl)['src']
                             df_list.append([platform, descrs, prodLink, price, rating, raters, np.nan, img_url])
                             num_prod2 = num_prod2 + 1
                             flp_write.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
                             progress = progress + (100/(num_prod_search))
                             my_bar2.progress(int(progress) if int(progress)<100 else 100)
                     else:
-                        prods = row.find_all('div', class_='_1xHGtK _373qXS')
+                        prods = row.find_all('div', class_=FlipWid25Cat2ProdsInRow)
                         for prod in prods:
-                            header = prod.find('a', class_='IRpwTa')
+                            header = prod.find('a', class_=FlipWid25Cat2Header)
                             descrs = header['title']
-                            prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0])
-                            price = int(prod.find('div', class_='_30jeq3').text[1:].replace(',', ''))
-                            # sleep(1.5)
-                            prod_text = requests.get(prodLink).text
+                            prodLink = 'https://www.flipkart.com' + (header['href'].split('?')[0]) + '?marketplace=FLIPKART'
+                            price = int(prod.find('div', class_=FlipWid25Cat2Pricebox).text[1:].replace(',', ''))
+                            prod_text = session.get(prodLink, headers=flipkartHeaders).text
                             prod_soup = BeautifulSoup(prod_text, "html.parser")
-                            # ratebox = prod_soup.find('div', class_='_3LWZlK _3uSWvT')
-                            ratebox = prod_soup.find('div', class_='_3LWZlK')
+                            ratebox = prod_soup.find('div', class_=FlipWid25Cat2Ratebox)
                             if ratebox is None:
                                 status_write.write("continuing at ratebox")
                                 continue
                             rating = float(ratebox.text)
-                            rateData = prod_soup.find('span', class_="_2_R_DZ")
+                            rateData = prod_soup.find('span', class_=FlipWid25Cat1Raters)
                             if (rateData is None) or (len(rateData.text.split()) < 4):
                                 status_write.write("continuing at ratedata")
                                 continue
@@ -365,7 +394,7 @@ if search_for_orig != '':
                                 status_write.write("continuing at raters")
                                 continue
                             reviewers = int(rateData.text.split()[3].replace(',',''))
-                            img_url = prod.find('img', class_="_2r_T1I")['src']
+                            img_url = prod.find('img', class_=FlipWid25Cat2Imgurl)['src']
                             df_list.append([platform, descrs, prodLink, price, rating, raters, reviewers, img_url])
                             num_prod2 = num_prod2 + 1
                             flp_write.write(f"Flipkart : searched for {num_prod2} products in {page2} pages")
