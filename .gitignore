@@ -1,1 +1,4 @@
-.streamlit
+secrets.toml
+development
+__pycache__
+.mypy_cache
