@@ -2,14 +2,13 @@
 
 import requests
 from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 
 def create_session() -> requests.Session:
     """Create a requests session with retry logic."""
     session = requests.Session()
-    retry = Retry(connect=3, backoff_factor=0.5)
-    adapter = HTTPAdapter(max_retries=retry)
+    # retry = Retry(connect=3, backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=0)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     return session

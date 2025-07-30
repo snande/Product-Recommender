@@ -1,10 +1,16 @@
 """Base scraper abstract class for Product Recommender."""
 
+import logging
+import random
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
 import pandas as pd
+import requests
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 class BaseScraper(ABC):
@@ -13,49 +19,66 @@ class BaseScraper(ABC):
     def scrape(
         self,
         search_term: str,
-        session: Any,
+        session: requests.Session,
         max_pages: int = 15,
-        ui_hooks: Any = None,
-    ) -> Any:
+        max_prodcuts: int = 100,
+    ) -> pd.DataFrame:
         """Scrape products for a search term using the implemented methods."""
         df_list = []
         product_count = 0
         for page in range(1, max_pages + 1):
+            logger.info(f"Starting scraping for page: {page}")
             url = self.get_search_url(search_term, page)
-            html = self._get_response_text(session, url, ui_hooks, page)
+            html = self._get_response_text(session, url)
             if not html:
                 continue
             soup = BeautifulSoup(html, "html.parser")
             cards = self.get_product_cards(soup)
+            logger.debug(f"Found {len(cards)} product cards in page: {page}")
+            products = []
             for card in cards:
-                product = self.parse_product_card(card, session)
-                if product:
-                    df_list.append(product)
+                parsed_products: list = self.parse_product_card(card, session)
+                if parsed_products:
+                    df_list = df_list + parsed_products
+                    products += parsed_products
                     product_count += 1
-            if ui_hooks:
-                ui_hooks.get("progress", lambda x: None)(
-                    min(100, int((product_count / 100) * 100))
-                )
-            if product_count >= 100:
-                break
-        if df_list:
-            return pd.DataFrame(df_list)
-        return None
+            logger.info(f"Found {len(products)} products on page: {page}")
 
-    def _get_response_text(
-        self, session: Any, url: str, ui_hooks: Any, page: int
-    ) -> Any:
-        attempts = 0
-        while attempts < 3:
+            if product_count >= max_prodcuts:
+                break
+
+        logger.info(f" Found total {len(df_list)} products in {self.platform_name}")
+
+        return pd.DataFrame(
+            df_list,
+            columns=[
+                "platform",
+                "Desc",
+                "Link",
+                "Price",
+                "Rating",
+                "Raters",
+                "Reviewers",
+                "img_url",
+            ],
+        )
+
+    def _get_response_text(self, session: requests.Session, url: str) -> Any:
+        attempts = 1
+        start_time = time.time()
+        while (time.time() - start_time) < 100:
             response = session.get(url)
-            if ui_hooks:
-                ui_hooks.get("status", lambda x: None)(
-                    f"Attempt {attempts + 1} for page {page},"
-                    " status {response.status_code}"
-                )
             if response.status_code == 200:
+                logger.debug(
+                    f"Request succeeded after trying {attempts} times for url: {url}"
+                )
                 return response.text
+            delay = random.uniform(0.1, 5.5)
+            time.sleep(delay)
             attempts += 1
+        logger.warning(
+            f"Request failed even after trying {attempts} times for url: {url}"
+        )
         return None
 
     @abstractmethod
@@ -69,7 +92,9 @@ class BaseScraper(ABC):
         pass
 
     @abstractmethod
-    def parse_product_card(self, card: Any, session: Any = None) -> Any:
+    def parse_product_card(
+        self, product_card: Any, session: requests.Session | None = None
+    ) -> list[Any]:
         """Parse a single product card and extract product details."""
         pass
 
