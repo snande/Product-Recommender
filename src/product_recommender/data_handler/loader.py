@@ -1,23 +1,38 @@
 """Loader utilities for data handling in Product Recommender."""
 
 from io import BytesIO
-from typing import Any
 
 import pandas as pd
 
-from product_recommender.config import AZURE_MASTER_FILE
+from product_recommender.config import AZURE_MASTER_FILE, AZURE_RESULT_FILE_LOC
 from product_recommender.data_handler.storage import get_container_client
 
 
-def load_key_dict() -> Any:
+def load_key_dict() -> pd.DataFrame:
     """Load the key dictionary from the Azure blob storage master file."""
     container_client = get_container_client()
     data = container_client.download_blob(AZURE_MASTER_FILE).readall()
-    return pd.read_json(BytesIO(data), dtype={"Search": str, "Time": float, "Key": str})
+    df = pd.read_json(BytesIO(data), dtype={"search": str, "time": float, "key": str})
+    return df
 
 
-def load_result_file(filename: str) -> Any:
+def load_result_file(key: str) -> pd.DataFrame:
     """Load a result file from Azure blob storage by filename."""
     container_client = get_container_client()
-    data = container_client.download_blob(filename).readall()
-    return pd.read_json(BytesIO(data))
+    file_path = AZURE_RESULT_FILE_LOC + key + ".json"
+    data = container_client.download_blob(file_path).readall()
+    df = pd.read_json(BytesIO(data))
+    df.columns = [
+        "platform",
+        "description",
+        "link",
+        "price",
+        "rating",
+        "raters",
+        "reviewers",
+        "image_url",
+        "scaled_rating",
+        "vfm",
+        "composite",
+    ]
+    return df

@@ -2,6 +2,7 @@
 
 from requests import Session
 
+from product_recommender.services.analytics import attach_metrics
 from product_recommender.services.cache import get_cached_result, save_to_cache
 from product_recommender.services.scraper import get_all_products
 
@@ -14,6 +15,7 @@ def fetch_products(
     if cached_df is not None and not force_refresh:
         return cached_df
 
-    df = get_all_products(search_term, session)
+    df_all_products = get_all_products(search_term, session)
+    df = attach_metrics(df_all_products)
     save_to_cache(search_term, df)
     return df

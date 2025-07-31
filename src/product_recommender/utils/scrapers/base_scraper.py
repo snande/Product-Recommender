@@ -53,13 +53,13 @@ class BaseScraper(ABC):
             df_list,
             columns=[
                 "platform",
-                "Desc",
-                "Link",
-                "Price",
-                "Rating",
-                "Raters",
-                "Reviewers",
-                "img_url",
+                "description",
+                "link",
+                "price",
+                "rating",
+                "raters",
+                "reviewers",
+                "image_url",
             ],
         )
 
