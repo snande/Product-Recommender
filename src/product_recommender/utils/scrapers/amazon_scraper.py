@@ -7,18 +7,17 @@ from product_recommender.utils.scrapers.base_scraper import BaseScraper
 
 logger = logging.getLogger(__name__)
 
-AmazProdCards = "puis-card-container"
-AmazBrand = "a-size-mini s-line-clamp-1"
-# eg: smartphone, watch
-AmazDesc2Line = (
-    "a-link-normal s-line-clamp-2 s-line-clamp-3-for-col-12 s-link-style a-text-normal"
-)
-# eg: trimmer
-AmazDesc3Line = "a-link-normal s-line-clamp-3 s-link-style a-text-normal"
-AmazPriceTag = "a-offscreen"
-AmazRateTag = "a-row a-size-small"
-AmazRatersTag = "a-link-normal s-underline-text s-underline-link-text s-link-style"
-AmazImgTag = "s-image"
+
+class AmazonConstants:
+    """Contants used by Amazon scraper."""
+
+    prod_cards = "puis-card-container"
+    brand = "a-size-mini s-line-clamp-1"
+    desc_box = "s-line-clamp"
+    price_tag = "a-offscreen"
+    rate_tag = "a-row a-size-small"
+    raters_tag = "a-link-normal s-underline-text s-underline-link-text s-link-style"
+    img_tag = "s-image"
 
 
 class AmazonScraper(BaseScraper):
@@ -38,22 +37,26 @@ class AmazonScraper(BaseScraper):
 
     def get_product_cards(self, soup: Any) -> Any:
         """Extract product card elements from the soup."""
-        product_cards = soup.find_all("div", class_=AmazProdCards)
+        product_cards = soup.find_all("div", class_=AmazonConstants.prod_cards)
         return product_cards
 
     def parse_product_card(self, product_card: Any, session: Any = None) -> list[Any]:
         """Parse a single product card and extract product details."""
-        brand = product_card.find("h2", class_=AmazBrand)
+        brand = product_card.find("h2", class_=AmazonConstants.brand)
         brand = brand.text + " | " if brand else ""
-        description_box = product_card.find("a", class_=AmazDesc2Line)
+        description_box = [
+            i
+            for i in product_card.find_all("a")
+            if AmazonConstants.desc_box in "".join(i["class"])
+        ][0]
         if not description_box:
-            description_box = product_card.find("a", class_=AmazDesc3Line)
+            raise Exception("Description box not found.")
         description = brand + description_box.text
 
         product_link = (
             "https://www.amazon.in" + description_box["href"].split("/ref=")[0]
         )
-        price_tag = product_card.find("span", class_=AmazPriceTag)
+        price_tag = product_card.find("span", class_=AmazonConstants.price_tag)
         if not price_tag:
             logger.debug(
                 "Skipping scraping product with url: "
@@ -62,8 +65,8 @@ class AmazonScraper(BaseScraper):
             return []
         price = int(round(float(price_tag.text[1:].replace(",", "")), 0))
 
-        rate_tag = product_card.find("div", class_=AmazRateTag)
-        raters_tag = product_card.find("a", class_=AmazRatersTag)
+        rate_tag = product_card.find("div", class_=AmazonConstants.rate_tag)
+        raters_tag = product_card.find("a", class_=AmazonConstants.raters_tag)
 
         if not rate_tag or not raters_tag:
             logger.debug(
@@ -86,7 +89,7 @@ class AmazonScraper(BaseScraper):
             )
             return []
 
-        image_tag = product_card.find("img", class_=AmazImgTag)
+        image_tag = product_card.find("img", class_=AmazonConstants.img_tag)
         image_url = image_tag["src"] if image_tag else None
 
         return [
