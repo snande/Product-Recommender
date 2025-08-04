@@ -12,8 +12,8 @@ def get_all_products(search_term: str, session: Session) -> pd.DataFrame:
     amazon_scraper = AmazonScraper()
     flipkart_scraper = FlipkartScraper()
 
-    amazon_df = amazon_scraper.scrape(search_term, session, max_pages=6)
-    flipkart_df = flipkart_scraper.scrape(search_term, session, max_pages=6)
+    amazon_df = amazon_scraper.scrape(search_term, session, num_pages=6)
+    flipkart_df = flipkart_scraper.scrape(search_term, session, num_pages=6)
 
     df = pd.concat([amazon_df, flipkart_df], ignore_index=True)
 

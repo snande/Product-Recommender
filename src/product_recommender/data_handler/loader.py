@@ -21,7 +21,7 @@ def load_result_file(key: str) -> pd.DataFrame:
     container_client = get_container_client()
     file_path = AZURE_RESULT_FILE_LOC + key + ".json"
     data = container_client.download_blob(file_path).readall()
-    df = pd.read_json(BytesIO(data))
+    df = pd.read_json(BytesIO(data)).round(decimals=3)
     df.columns = [
         "platform",
         "description",

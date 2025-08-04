@@ -20,9 +20,9 @@ def get_cached_result(search_term: str) -> DataFrame | None:
 
 def save_to_cache(search_term: str, df: DataFrame) -> None:
     """Save the result DataFrame to cache for a given search term."""
-    saving_time = time.time()
     num_products_amazon = len(df[df["platform"] == "Amazon"])
     num_products_flipkart = len(df[df["platform"] == "Flipkart"])
+    saving_time = time.time()
     key = "_".join(
         [
             str(saving_time).split(".")[0],

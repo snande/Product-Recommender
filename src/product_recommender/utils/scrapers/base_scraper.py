@@ -4,6 +4,7 @@ import logging
 import random
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pandas as pd
@@ -20,33 +21,12 @@ class BaseScraper(ABC):
         self,
         search_term: str,
         session: requests.Session,
-        max_pages: int = 15,
-        max_prodcuts: int = 100,
+        num_pages: int = 15,
     ) -> pd.DataFrame:
         """Scrape products for a search term using the implemented methods."""
-        df_list = []
-        product_count = 0
-        for page in range(1, max_pages + 1):
-            logger.info(f"Starting scraping for page: {page}")
-            url = self.get_search_url(search_term, page)
-            html = self._get_response_text(session, url)
-            if not html:
-                continue
-            soup = BeautifulSoup(html, "html.parser")
-            cards = self.get_product_cards(soup)
-            logger.debug(f"Found {len(cards)} product cards in page: {page}")
-            products = []
-            for card in cards:
-                parsed_products: list = self.parse_product_card(card, session)
-                if parsed_products:
-                    df_list = df_list + parsed_products
-                    products += parsed_products
-                    product_count += 1
-            logger.info(f"Found {len(products)} products on page: {page}")
-
-            if product_count >= max_prodcuts:
-                break
-
+        df_list = self._process_pages_in_parallel(
+            search_term=search_term, num_pages=num_pages, session=session, num_threads=5
+        )
         logger.info(f" Found total {len(df_list)} products in {self.platform_name}")
 
         return pd.DataFrame(
@@ -103,3 +83,61 @@ class BaseScraper(ABC):
     def platform_name(self) -> str:
         """Return the platform name for the scraper."""
         pass
+
+    def _process_cards_in_parallel(
+        self, cards: Any, sesssion: requests.Session, num_threads: int = 5
+    ) -> list:
+        futures = []
+        parsed_products = []
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            for card in cards:
+                futures.append(executor.submit(self.parse_product_card, card, sesssion))
+
+            for future in futures:
+                if future.result():
+                    parsed_products = parsed_products + future.result()
+        return parsed_products
+
+    def _process_one_page(self, search_term: str, page: int, session: requests.Session):
+        logger.info(f"Starting scraping for page: {page}")
+        url = self.get_search_url(search_term, page)
+        html = self._get_response_text(session, url)
+        if not html:
+            logger.warning(
+                f"Skipping crawling url: {url} because of multiple failed attempts."
+            )
+            return None
+        soup = BeautifulSoup(html, "html.parser")
+        cards = self.get_product_cards(soup)
+        logger.debug(f"Found {len(cards)} product cards in page: {page}")
+
+        parsed_products = self._process_cards_in_parallel(
+            cards=cards, sesssion=session, num_threads=5
+        )
+        logger.info(f"Found {len(parsed_products)} products on page: {page}")
+        return parsed_products
+
+    def _process_pages_in_parallel(
+        self,
+        search_term: str,
+        num_pages: int,
+        session: requests.Session,
+        num_threads: int = 5,
+    ):
+        futures = []
+        df_list = []
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            for page in range(num_pages):
+                futures.append(
+                    executor.submit(
+                        self._process_one_page,
+                        search_term=search_term,
+                        page=page,
+                        session=session,
+                    )
+                )
+
+            for future in futures:
+                if future.result():
+                    df_list = df_list + future.result()
+        return df_list

@@ -11,9 +11,11 @@ def fetch_products(
     search_term: str, session: Session, force_refresh: bool = False
 ) -> object:
     """Fetch products for a search term, using cache unless force_refresh is True."""
-    cached_df = get_cached_result(search_term)
-    if cached_df is not None and not force_refresh:
-        return cached_df
+    search_term = search_term.lower()
+    if not force_refresh:
+        cached_df = get_cached_result(search_term)
+        if cached_df:
+            return cached_df
 
     df_all_products = get_all_products(search_term, session)
     df = attach_metrics(df_all_products)
