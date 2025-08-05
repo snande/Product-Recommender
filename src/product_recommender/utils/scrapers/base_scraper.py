@@ -86,7 +86,7 @@ class BaseScraper(ABC):
         pass
 
     def _process_cards_in_parallel(
-        self, cards: Any, sesssion: requests.Session, num_threads: int = 5
+        self, cards: Any, sesssion: requests.Session, num_threads: int = 10
     ) -> list:
         futures = []
         parsed_products = []
@@ -124,7 +124,7 @@ class BaseScraper(ABC):
         search_term: str,
         num_pages: int,
         session: requests.Session,
-        num_threads: int = 5,
+        num_threads: int = 10,
     ):
         futures = []
         df_list = []

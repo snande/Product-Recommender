@@ -191,7 +191,7 @@ class FlipkartScraper(BaseScraper):
         return parsed_product_card
 
     def _parse_style_25_cat1_product_cards(
-        self, product_cards_cat1, num_threads=5
+        self, product_cards_cat1, num_threads=10
     ) -> list[Any]:
         parsed_products = []
         futures = []
@@ -276,7 +276,7 @@ class FlipkartScraper(BaseScraper):
         return parsed_product_card
 
     def _parse_style_25_cat2_product_cards(
-        self, product_cards_cat2: Any, session: Any, num_threads: int = 5
+        self, product_cards_cat2: Any, session: Any, num_threads: int = 10
     ) -> list[Any]:
         parsed_products = []
         futures = []

@@ -1,5 +1,7 @@
 """Scraper service for aggregating products from multiple platforms."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pandas as pd
 from requests import Session
 
@@ -12,8 +14,12 @@ def get_all_products(search_term: str, session: Session) -> pd.DataFrame:
     amazon_scraper = AmazonScraper()
     flipkart_scraper = FlipkartScraper()
 
-    amazon_df = amazon_scraper.scrape(search_term, session, num_pages=6)
-    flipkart_df = flipkart_scraper.scrape(search_term, session, num_pages=6)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        amazon_future = executor.submit(amazon_scraper.scrape, search_term, session)
+        flipkart_future = executor.submit(flipkart_scraper.scrape, search_term, session)
+
+        amazon_df = amazon_future.result()
+        flipkart_df = flipkart_future.result()
 
     df = pd.concat([amazon_df, flipkart_df], ignore_index=True)
 

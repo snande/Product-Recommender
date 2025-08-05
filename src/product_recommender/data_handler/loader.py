@@ -19,7 +19,7 @@ def load_key_dict() -> pd.DataFrame:
 def load_result_file(key: str) -> pd.DataFrame:
     """Load a result file from Azure blob storage by filename."""
     container_client = get_container_client()
-    file_path = AZURE_RESULT_FILE_LOC + key + ".json"
+    file_path = AZURE_RESULT_FILE_LOC + "/" + key + ".json"
     data = container_client.download_blob(file_path).readall()
     df = pd.read_json(BytesIO(data)).round(decimals=3)
     df.columns = [
