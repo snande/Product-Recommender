@@ -14,7 +14,7 @@ def fetch_products(
     search_term = search_term.lower()
     if not force_refresh:
         cached_df = get_cached_result(search_term)
-        if cached_df:
+        if cached_df is not None:
             return cached_df
 
     df_all_products = get_all_products(search_term, session)

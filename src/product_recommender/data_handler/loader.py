@@ -31,6 +31,7 @@ def load_result_file(key: str) -> pd.DataFrame:
         "raters",
         "reviewers",
         "image_url",
+        "page",
         "scaled_rating",
         "vfm",
         "composite",

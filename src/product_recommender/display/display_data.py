@@ -4,104 +4,61 @@ from io import BytesIO
 from typing import Any
 
 import streamlit as st
+from pandas import DataFrame
 from PIL import Image
 
+# ruff: noqa: E501
 
-def display_data(df: Any, session: Any) -> None:
+
+def display_data(df: DataFrame, session: Any) -> None:
     """Display product data in a sorted and formatted manner using Streamlit."""
     df_rat = df.sort_values(
-        ["Scaled Rating", "composite", "VFM", "Raters", "Reviewers"],
+        ["scaled_rating", "composite", "vfm", "raters", "reviewers"],
         axis=0,
         ascending=False,
+        ignore_index=True,
     ).head(5)
     df_vfm = df.sort_values(
-        ["VFM", "composite", "Scaled Rating", "Raters", "Reviewers"],
+        ["vfm", "composite", "scaled_rating", "raters", "reviewers"],
         axis=0,
         ascending=False,
+        ignore_index=True,
     ).head(5)
     df_com = df.sort_values(
-        ["composite", "Scaled Rating", "VFM", "Raters", "Reviewers"],
+        ["composite", "scaled_rating", "vfm", "raters", "reviewers"],
         axis=0,
         ascending=False,
+        ignore_index=True,
     ).head(5)
 
     st.subheader("Best Products by Rating")
-    for row_index in range(len(df_rat)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(
-            f"{row_index + 1}. "
-            f"[{df_rat.iloc[row_index, 1]}]({df_rat.iloc[row_index, 2]})\n"
-            f"  **Platform** : {df_rat.iloc[row_index, 0]}\n"
-            f"  **Price** : {df_rat.iloc[row_index, 3]} Rs.\n"
-            f"  **Rating** : {round(df_rat.iloc[row_index, 8], 2)}\n"
-            f"  **Value for Money** : "
-            f"{round(df_rat.iloc[row_index, 9], 2)}\n"
-            f"  **Composite Rating** : "
-            f"{round(df_rat.iloc[row_index, 10], 2)}"
-        )
-        image_response = session.get(df_rat.iloc[row_index, 7])
-        img_rat: Image.Image = Image.open(BytesIO(image_response.content))
-        width, image_height = img_rat.size
-        st.image(img_rat, width=width)
+    _display_dataframe(df_rat, session)
 
     st.subheader("Best Products by Value for Money")
-    for row_index in range(len(df_vfm)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(
-            f"{row_index + 1}. "
-            f"[{df_vfm.iloc[row_index, 1]}]({df_vfm.iloc[row_index, 2]})\n"
-            f"  **Platform** : {df_vfm.iloc[row_index, 0]}\n"
-            f"  **Price** : {df_vfm.iloc[row_index, 3]} Rs.\n"
-            f"  **Rating** : {round(df_vfm.iloc[row_index, 8], 2)}\n"
-            f"  **Value for Money** : "
-            f"{round(df_vfm.iloc[row_index, 9], 2)}\n"
-            f"  **Composite Rating** : "
-            f"{round(df_vfm.iloc[row_index, 10], 2)}"
-        )
-        image_response = session.get(df_vfm.iloc[row_index, 7])
-        img_vfm: Image.Image = Image.open(BytesIO(image_response.content))
-        width, image_height = img_vfm.size
-        st.image(
-            img_vfm,
-            width=200,
-        )
+    _display_dataframe(df_vfm, session)
 
     st.subheader("Best Products by Composite Rating")
-    for row_index in range(len(df_com)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(
-            f"{row_index + 1}. "
-            f"[{df_com.iloc[row_index, 1]}]({df_com.iloc[row_index, 2]})\n"
-            f"  **Platform** : {df_com.iloc[row_index, 0]}\n"
-            f"  **Price** : {df_com.iloc[row_index, 3]} Rs.\n"
-            f"  **Rating** : {round(df_com.iloc[row_index, 8], 2)}\n"
-            f"  **Value for Money** : "
-            f"{round(df_com.iloc[row_index, 9], 2)}\n"
-            f"  **Composite Rating** : "
-            f"{round(df_com.iloc[row_index, 10], 2)}"
-        )
-        image_response = session.get(df_com.iloc[row_index, 7])
-        img_com: Image.Image = Image.open(BytesIO(image_response.content))
-        width, image_height = img_com.size
-        st.image(
-            img_com,
-            width=200,
-        )
+    _display_dataframe(df_com, session)
 
     st.subheader("Entire Data Extract")
-    st.dataframe(
-        df[
-            [
-                "platform",
-                "Desc",
-                "Link",
-                "Price",
-                "Rating",
-                "Raters",
-                "Reviewers",
-                "Scaled Rating",
-                "VFM",
-                "composite",
-            ]
-        ]
-    )
+    st.dataframe(df)
+
+
+def _display_dataframe(df, session):
+    for row_index in range(len(df)):
+        col1, col2 = st.columns([4, 1])
+        col1.write(
+            f"""
+    {row_index + 1}. [{df.loc[row_index, "description"]}]({df.loc[row_index, "link"]})  
+    **Platform** : {df.loc[row_index, "platform"]}  
+    **Price** : {df.loc[row_index, "price"]} Rs.  
+    **Rating** : {round(df.loc[row_index, "scaled_rating"], 2)}  
+    **Value for Money** : {round(df.loc[row_index, "vfm"], 2)}  
+    **Composite Rating** : {round(df.loc[row_index, "composite"], 2)}"""
+        )
+        image_response = session.get(df.loc[row_index, "image_url"])
+        img: Image.Image = Image.open(BytesIO(image_response.content))
+        width, height = img.size
+        resize_len = width if width >= height else height
+        img = img.resize((resize_len, resize_len))
+        col2.image(img)

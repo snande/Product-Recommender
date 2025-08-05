@@ -21,7 +21,7 @@ class BaseScraper(ABC):
         self,
         search_term: str,
         session: requests.Session,
-        num_pages: int = 15,
+        num_pages: int = 6,
     ) -> pd.DataFrame:
         """Scrape products for a search term using the implemented methods."""
         df_list = self._process_pages_in_parallel(
@@ -40,6 +40,7 @@ class BaseScraper(ABC):
                 "raters",
                 "reviewers",
                 "image_url",
+                "page",
             ],
         )
 
@@ -115,6 +116,7 @@ class BaseScraper(ABC):
             cards=cards, sesssion=session, num_threads=5
         )
         logger.info(f"Found {len(parsed_products)} products on page: {page}")
+        parsed_products = [product + [page] for product in parsed_products]
         return parsed_products
 
     def _process_pages_in_parallel(
@@ -127,7 +129,7 @@ class BaseScraper(ABC):
         futures = []
         df_list = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            for page in range(num_pages):
+            for page in range(1, num_pages + 1):
                 futures.append(
                     executor.submit(
                         self._process_one_page,

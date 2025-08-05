@@ -30,8 +30,8 @@ def attach_metrics(df: DataFrame) -> DataFrame:
     df = df[
         (
             (
-                (df["price"] > df["price"].quantile(0.025))
-                & (df["price"] < df["price"].quantile(0.985))
+                (df["price"] > df.loc[df["page"] < 3, "price"].quantile(0.2))
+                & (df["price"] < df.loc[df["page"] < 3, "price"].quantile(0.985))
                 & (df["platform"] == "Amazon")
             )
             | (df["platform"] == "Flipkart")
@@ -48,7 +48,7 @@ def attach_metrics(df: DataFrame) -> DataFrame:
     df["composite"] = (df["scaled_rating"] / (df["scaled_rating"].median())) * (
         np.sqrt(df["vfm"]) / (np.sqrt(df["vfm"].median()))
     )
-    df = df.fillna(np.nan).infer_objects().round(decimals=3).copy()
+    df = df.fillna(np.nan).infer_objects(copy=False).round(decimals=3)
     df["scaled_rating"] = df["scaled_rating"].astype(float).fillna(np.nan)
     df["reviewers"] = df["reviewers"].astype(float).fillna(np.nan)
     return df
