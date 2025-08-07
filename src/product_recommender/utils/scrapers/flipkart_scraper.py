@@ -91,11 +91,14 @@ class FlipkartScraper(BaseScraper):
                 ].split("?")[0]
             )
         )
-        price = int(
-            product_row.find("div", class_=FlipkartConstants.wid_100_pricebox)
-            .text[1:]
-            .replace(",", "")
-        )
+        price_box = product_row.find("div", class_=FlipkartConstants.wid_100_pricebox)
+        if not price_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because price data not found."
+            )
+            return []
+        price = int(price_box.text[1:].replace(",", ""))
         rating = float(
             product_row.find("div", class_=FlipkartConstants.wid_100_ratingbox).text
         )
