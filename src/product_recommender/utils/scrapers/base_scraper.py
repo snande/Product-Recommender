@@ -100,7 +100,7 @@ class BaseScraper(ABC):
         return parsed_products
 
     def _process_one_page(self, search_term: str, page: int, session: requests.Session):
-        logger.info(f"Starting scraping for page: {page}")
+        logger.info(f"Starting scraping for page: {page} on platform {self.platform_name}")
         url = self.get_search_url(search_term, page)
         html = self._get_response_text(session, url)
         if not html:
@@ -110,12 +110,12 @@ class BaseScraper(ABC):
             return None
         soup = BeautifulSoup(html, "html.parser")
         cards = self.get_product_cards(soup)
-        logger.debug(f"Found {len(cards)} product cards in page: {page}")
+        logger.debug(f"Found {len(cards)} product cards in page: {page} on platform {self.platform_name}")
 
         parsed_products = self._process_cards_in_parallel(
             cards=cards, sesssion=session, num_threads=5
         )
-        logger.info(f"Found {len(parsed_products)} products on page: {page}")
+        logger.info(f"Found {len(parsed_products)} products on page: {page} for platform: {self.platform_name}")
         parsed_products = [product + [page] for product in parsed_products]
         return parsed_products
 

@@ -1,10 +1,15 @@
 """Search service for fetching products and handling cache logic."""
 
+import logging
 from requests import Session
 
 from product_recommender.services.analytics import attach_metrics
 from product_recommender.services.cache import get_cached_result, save_to_cache
 from product_recommender.services.scraper import get_all_products
+from product_recommender.utils.logging import get_logger
+
+
+logger = get_logger(name="product_recommender", console_log_level=logging.DEBUG)
 
 
 def fetch_products(

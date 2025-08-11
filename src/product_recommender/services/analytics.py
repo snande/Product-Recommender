@@ -27,23 +27,24 @@ def attach_metrics(df: DataFrame) -> DataFrame:
             'scaled_rating', 'vfm', and 'composite'.
     """
     df = df.drop_duplicates(subset=["price", "rating", "raters"])
-    df = df[
-        (
+    if len(df[(df["page"] < 3) & (df["platform"] == "Flipkart")]) > 20:
+        df = df[
             (
-                (df["price"] > df.loc[df["page"] < 3, "price"].quantile(0.2))
-                & (df["price"] < df.loc[df["page"] < 3, "price"].quantile(0.985))
-                & (df["platform"] == "Amazon")
+                (
+                    (df["price"] > df.loc[(df["page"] < 3) & (df["platform"] == "Flipkart"), "price"].quantile(0.2))
+                    & (df["price"] < df.loc[(df["page"] < 3) & (df["platform"] == "Flipkart"), "platform"].quantile(0.985))
+                    & (df["platform"] == "Amazon")
+                )
+                | (df["platform"] == "Flipkart")
             )
-            | (df["platform"] == "Flipkart")
-        )
-    ]
+        ]
     df["scaled_rating"] = df["rating"] * (
-        1 - np.power(1.25, -1 * np.sqrt(df["raters"]))
+        1 - np.power(1.25, -1 * np.sqrt(df["raters"].astype(float)))
     )
     df["vfm"] = (
         (df["scaled_rating"] / (df["scaled_rating"].median()))
         * (np.sqrt(df["price"].median()))
-        / np.sqrt(df["price"])
+        / np.sqrt(df["price"].astype(float))
     )
     df["composite"] = (df["scaled_rating"] / (df["scaled_rating"].median())) * (
         np.sqrt(df["vfm"]) / (np.sqrt(df["vfm"].median()))
