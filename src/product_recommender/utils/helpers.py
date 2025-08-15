@@ -26,6 +26,7 @@ flipkart_headers = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0"
     ),
+    "Referer": "https://www.flipkart.com/",
     "Accept-Encoding": "gzip, deflate, br, zstd",
     "Accept": (
         "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,"

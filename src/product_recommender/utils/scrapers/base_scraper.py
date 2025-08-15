@@ -54,10 +54,12 @@ class BaseScraper(ABC):
                     f"Request succeeded after trying {attempts} times for url: {url}"
                 )
                 return response.text
+            logger.warning(
+            f"Request failed at {attempts} attempt for url: {url}")
             delay = random.uniform(0.1, 5.5)
             time.sleep(delay)
             attempts += 1
-        logger.warning(
+        logger.error(
             f"Request failed even after trying {attempts} times for url: {url}"
         )
         return None
