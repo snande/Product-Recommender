@@ -32,7 +32,7 @@ def attach_metrics(df: DataFrame) -> DataFrame:
             (
                 (
                     (df["price"] > df.loc[(df["page"] < 3) & (df["platform"] == "Flipkart"), "price"].quantile(0.2))
-                    & (df["price"] < df.loc[(df["page"] < 3) & (df["platform"] == "Flipkart"), "platform"].quantile(0.985))
+                    & (df["price"] < df.loc[(df["page"] < 3) & (df["platform"] == "Flipkart"), "price"].quantile(0.985))
                     & (df["platform"] == "Amazon")
                 )
                 | (df["platform"] == "Flipkart")
