@@ -1,31 +1,48 @@
 """Flipkart scraper implementation for Product Recommender."""
 
+import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import numpy as np
 from bs4 import BeautifulSoup
 
+from product_recommender.utils.helpers import get_html
 from product_recommender.utils.scrapers.base_scraper import BaseScraper
 
-# Flipkart class variables (replace with actual values in your project)
-FlipAllRows = "_1AtVbE col-12-12"
-FlipWid100Desc = "_4rR01T"
-FlipWid100Prodlnk = "_1fQZEK"
-FlipWid100Pricebox = "_30jeq3 _1_WHN1"
-FlipWid100Ratebox = "_3LWZlK"
-FlipWid100Ratedata = "_2_R_DZ"
-FlipWid100Imgurl = "_396cs4 _3exPp9"
-FlipWid25Cat1ProdsInRow = "_13oc-S"
-FlipWid25Cat1Header = "_1fQZEK"
-FlipWid25Cat1Pricebox = "_30jeq3"
-FlipWid25Cat1Ratebox = "_3LWZlK"
-FlipWid25Cat1Raters = "_2_R_DZ"
-FlipWid25Cat1Imgurl = "_396cs4"
-FlipWid25Cat2ProdsInRow = "_13oc-S"
-FlipWid25Cat2Header = "_1fQZEK"
-FlipWid25Cat2Pricebox = "_30jeq3 _1_WHN1"
-FlipWid25Cat2Ratebox = "_3LWZlK"
-FlipWid25Cat2Imgurl = "_396cs4"
+logger = logging.getLogger(__name__)
+
+
+class FlipkartConstants:
+    """Contants used by Flipkart scraper."""
+
+    # Flipkart class variables (replace with actual values in your project)
+    all_rows = "_75nlfW"
+
+    # Width 100% (eg: phone)
+    wid_100_desc = "KzDlHZ"
+    wid_100_prod_lnk = "CGtC98"
+    wid_100_pricebox = "Nx9bqj _4b5DiR"
+    wid_100_ratingbox = "XQDdHH"
+    wid_100_raters = "Wphh3N"
+    wid_100_imgurl = "DByuf4"
+
+    # Width 25%
+    wid_25_pricebox = "Nx9bqj"
+    wid_25_raters = "Wphh3N"
+
+    # Width 25% Cat1 -> Rating shown in landing page (eg: trimmer)
+    wid_25_cat1_prods_in_row = "slAVV4"
+    wid_25_cat1_header = "wjcEIp"
+    wid_25_cat1_ratingbox = "XQDdHH"
+    wid_25_cat1_imgurl = "DByuf4"
+
+    # Width 25% Cat2 -> Rating shown in product page (eg: shoes)
+    wid_25_cat2_prods_in_row = "_1sdMkc LFEi7Z"
+    wid_25_cat2_header = "WKTcLC"
+    wid_25_cat2_ratingtab = "ISksQ2"
+    wid_25_cat2_ratingbox = "XQDdHH"
+    wid_25_cat2_img_url = "_53J4C-"
 
 
 class FlipkartScraper(BaseScraper):
@@ -40,148 +57,247 @@ class FlipkartScraper(BaseScraper):
         """Construct the Flipkart search URL for a given term and page."""
         query = search_term.replace(" ", "%20")
         return (
-            f"https://www.flipkart.com/search?q={query}"
-            f"&sort=popularity&p%5B%5D=facets.fulfilled_by%255B%255D%3DPlus%2B%2528FAssured%2529"
-            f"&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove"
-            f"&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock&page={page}"
+            f"https://www.flipkart.com/search?"
+            f"q={query}"
+            "&sort=popularity"
+            "&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove"
+            "&p%5B%5D=facets.fulfilled_by%255B%255D%3DF-Assured"
+            f"&page={page}"
         )
 
     def get_product_cards(self, soup: Any) -> Any:
         """Extract product card elements from the soup."""
-        return soup.find_all("div", class_=FlipAllRows)
+        return soup.find_all("div", class_=FlipkartConstants.all_rows)
 
-    def parse_product_card(self, product_row: Any, session: Any = None) -> Any:
+    def parse_product_card(self, product_card: Any) -> list[Any]:
         """Parse a single product card and extract product details."""
-        style = product_row.find("div")["style"] if product_row.find("div") else ""
+        style = product_card.find("div")["style"] if product_card.find("div") else ""
 
         if style == "width:100%":
-            return self._parse_style_100(product_row)
+            return self._parse_style_100(product_card)
         elif style == "width:25%":
-            return self._parse_style_25(product_row, session)
+            return self._parse_style_25(product_card)
+        else:
+            raise Exception("Width different that 25% or 100%, hence not parseable.")
 
-        return None
-
-    def _parse_style_100(self, product_row: Any) -> list[Any] | None:
-        try:
-            descrs = product_row.find("div", class_=FlipWid100Desc).text
-            prod_link = (
-                "https://www.flipkart.com"
-                + (
-                    product_row.find("a", class_=FlipWid100Prodlnk)["href"].split("?")[
-                        0
-                    ]
-                )
+    def _parse_style_100(self, product_row: Any) -> list[Any]:
+        description = product_row.find(
+            "div", class_=FlipkartConstants.wid_100_desc
+        ).text
+        product_link = (
+            "https://www.flipkart.com"
+            + (
+                product_row.find("a", class_=FlipkartConstants.wid_100_prod_lnk)[
+                    "href"
+                ].split("?")[0]
             )
-            price = int(
-                product_row.find("div", class_=FlipWid100Pricebox)
-                .text[1:]
-                .replace(",", "")
+        )
+        price_box = product_row.find("div", class_=FlipkartConstants.wid_100_pricebox)
+        if not price_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because price data not found."
             )
-            rating = float(product_row.find("div", class_=FlipWid100Ratebox).text)
-            rate_data = product_row.find("span", class_=FlipWid100Ratedata).text.split()
-            raters = int(rate_data[0].replace(",", ""))
-            if raters < 30:
-                return None
-            reviewers = int(rate_data[3].replace(",", ""))
-            img_url = product_row.find("img", class_=FlipWid100Imgurl)["src"]
-            return [
+            return []
+        price = int(price_box.text[1:].replace(",", ""))
+        rating_box = product_row.find("div", class_=FlipkartConstants.wid_100_ratingbox)
+        if not rating_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because rating data not found."
+            )
+            return []
+        rating = float(rating_box.text)
+        rate_data = product_row.find(
+            "span", class_=FlipkartConstants.wid_100_raters
+        ).text.split()
+        raters = int(rate_data[0].replace(",", ""))
+        if raters < 30:
+            return []
+        reviewers = int(rate_data[3].replace(",", ""))
+        image_url = product_row.find("img", class_=FlipkartConstants.wid_100_imgurl)[
+            "src"
+        ]
+        return [
+            [
                 self.platform_name,
-                descrs,
-                prod_link,
+                description,
+                product_link,
                 price,
                 rating,
                 raters,
                 reviewers,
-                img_url,
+                image_url,
             ]
-        except Exception:
-            return None
+        ]
 
-    def _parse_style_25(self, product_row: Any, session: Any) -> list[Any] | None:
-        product_cards = product_row.find_all("div", class_=FlipWid25Cat1ProdsInRow)
+    def _parse_style_25(self, product_row: Any) -> list[Any]:
+        product_cards_cat1 = product_row.find_all(
+            "div", class_=FlipkartConstants.wid_25_cat1_prods_in_row
+        )
         parsed_products = []
-
-        for product_card in product_cards:
-            try:
-                header = product_card.find("a", class_=FlipWid25Cat1Header)
-                descrs = header["title"]
-                prod_link = "https://www.flipkart.com" + header["href"].split("?")[0]
-                price = int(
-                    product_card.find("div", class_=FlipWid25Cat1Pricebox)
-                    .text[1:]
-                    .replace(",", "")
-                )
-                rating = float(
-                    product_card.find("div", class_=FlipWid25Cat1Ratebox).text
-                )
-                raters = int(
-                    product_card.find("span", class_=FlipWid25Cat1Raters)
-                    .text[1:-1]
-                    .replace(",", "")
-                )
-                if raters < 30:
-                    continue
-                img_url = product_card.find("img", class_=FlipWid25Cat1Imgurl)["src"]
-                parsed_products.append(
-                    [
-                        self.platform_name,
-                        descrs,
-                        prod_link,
-                        price,
-                        rating,
-                        raters,
-                        np.nan,
-                        img_url,
-                    ]
-                )
-            except Exception:
-                continue
-
-        if not parsed_products:
-            cat2_result = self._parse_style_25_cat2(product_row, session)
-            parsed_products = cat2_result if cat2_result is not None else []
-        return parsed_products[0] if parsed_products else None
-
-    def _parse_style_25_cat2(self, prod: Any, session: Any) -> list[list[Any]] | None:
-        try:
-            header = prod.find("a", class_=FlipWid25Cat2Header)
-            descrs = header["title"]
-            prod_link = "https://www.flipkart.com" + header["href"].split("?")[0]
-            price = int(
-                prod.find("div", class_=FlipWid25Cat2Pricebox).text[1:].replace(",", "")
+        if product_cards_cat1:
+            parsed_products = self._parse_style_25_cat1_product_cards(
+                product_cards_cat1=product_cards_cat1
+            )
+        else:
+            product_cards_cat2 = product_row.find_all(
+                "div", class_=FlipkartConstants.wid_25_cat2_prods_in_row
+            )
+            parsed_products = self._parse_style_25_cat2_product_cards(
+                product_cards_cat2=product_cards_cat2
             )
 
-            prod_text = session.get(prod_link).text
-            prod_soup = BeautifulSoup(prod_text, "html.parser")
-            ratebox = prod_soup.find("div", class_=FlipWid25Cat2Ratebox)
-            rate_data = prod_soup.find("span", class_=FlipWid25Cat1Raters)
+        return parsed_products
 
-            if not ratebox or not rate_data:
-                return None
+    def _parse_style_25_cat1_product_card(self, product_card: Any) -> list[Any]:
+        header = product_card.find("a", class_=FlipkartConstants.wid_25_cat1_header)
+        description = header["title"]
+        product_link = "https://www.flipkart.com" + header["href"].split("?")[0]
+        price_box = product_card.find("div", class_=FlipkartConstants.wid_25_pricebox)
+        if not price_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because price data not found."
+            )
+            return []
+        price = int(price_box.text[1:].replace(",", ""))
+        rating_box = product_card.find(
+            "div", class_=FlipkartConstants.wid_25_cat1_ratingbox
+        )
+        if not rating_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because rating data not found."
+            )
+            return []
 
-            rating = float(ratebox.text)
-            split_data = rate_data.text.split()
-            if len(split_data) < 4:
-                return None
+        rating = float(rating_box.text)
+        raters = int(
+            product_card.find("span", class_=FlipkartConstants.wid_25_raters)
+            .text[1:-1]
+            .replace(",", "")
+        )
+        if raters < 30:
+            logger.debug(
+                "Skipping scraping product with url: "
+                f"{product_link} because only {raters} (<30) people have rated it."
+            )
+            return []
+        img_url = product_card.find("img", class_=FlipkartConstants.wid_25_cat1_imgurl)[
+            "src"
+        ]
+        parsed_product_card = [
+            self.platform_name,
+            description,
+            product_link,
+            price,
+            rating,
+            raters,
+            np.nan,
+            img_url,
+        ]
+        return parsed_product_card
 
-            raters = int(split_data[0].replace(",", ""))
-            if raters < 30:
-                return None
+    def _parse_style_25_cat1_product_cards(
+        self, product_cards_cat1: list[Any], num_threads: int = 10
+    ) -> list[list[Any]]:
+        parsed_products = []
+        futures = []
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            for product_card in product_cards_cat1:
+                futures.append(
+                    executor.submit(
+                        self._parse_style_25_cat1_product_card, product_card
+                    )
+                )
 
-            reviewers = int(split_data[3].replace(",", ""))
-            img_url = prod.find("img", class_=FlipWid25Cat2Imgurl)["src"]
+            for future in futures:
+                if future.result():
+                    parsed_products.append(future.result())
+        return parsed_products
 
-            return [
-                [
-                    self.platform_name,
-                    descrs,
-                    prod_link,
-                    price,
-                    rating,
-                    raters,
-                    reviewers,
-                    img_url,
-                ]
-            ]
-        except Exception:
-            return None
+    def _parse_style_25_cat2_product_card(self, product_card: Any) -> list[Any]:
+        header = product_card.find("a", class_=FlipkartConstants.wid_25_cat2_header)
+        description = header["title"]
+        product_link = "https://www.flipkart.com" + header["href"].split("?")[0]
+        price_box = product_card.find("div", class_=FlipkartConstants.wid_25_pricebox)
+        if not price_box:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because price data not found."
+            )
+            return []
+        price = int(price_box.text[1:].replace(",", ""))
+
+        product_text = get_html(product_link).text
+        product_soup = BeautifulSoup(product_text, "html.parser")
+        rating_tab = product_soup.find(
+            "div", class_=FlipkartConstants.wid_25_cat2_ratingtab
+        )
+
+        if not rating_tab:
+            logger.warning(
+                "Skipping scraping product with url: "
+                f"{product_link} because rating data not found."
+            )
+            return []
+
+        rating_box = rating_tab.find(  # type: ignore[attr-defined]
+            "div", class_=FlipkartConstants.wid_25_cat2_ratingbox
+        )
+        raters_data = rating_tab.find("span", class_=FlipkartConstants.wid_25_raters)  # type: ignore[attr-defined]
+
+        rating = float(rating_box.text)
+        split_data = raters_data.text.split()
+        if len(split_data) < 4:
+            logger.warning(
+                f"Skipping scraping product with url: {product_link} "
+                f"because of incorrectly formatted rating information: "
+                f"{raters_data.text}"
+            )
+            return []
+
+        raters = int(split_data[0].replace(",", ""))
+        if raters < 30:
+            logger.debug(
+                f"Skipping scraping product with url: {product_link} "
+                f"because only {raters} (<30) people have rated it."
+            )
+            return []
+
+        reviewers = int(split_data[3].replace(",", ""))
+        image_url = product_card.find(
+            "img", class_=FlipkartConstants.wid_25_cat2_img_url
+        )["src"]
+
+        parsed_product_card = [
+            self.platform_name,
+            description,
+            product_link,
+            price,
+            rating,
+            raters,
+            reviewers,
+            image_url,
+        ]
+
+        return parsed_product_card
+
+    def _parse_style_25_cat2_product_cards(
+        self, product_cards_cat2: list[Any], num_threads: int = 10
+    ) -> list[list[Any]]:
+        parsed_products = []
+        futures = []
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            for product_card in product_cards_cat2:
+                futures.append(
+                    executor.submit(
+                        self._parse_style_25_cat2_product_card, product_card
+                    )
+                )
+
+            for future in futures:
+                if future.result():
+                    parsed_products.append(future.result())
+        return parsed_products

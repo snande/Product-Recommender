@@ -1,8 +1,23 @@
 """Amazon scraper implementation for Product Recommender."""
 
+import logging
 from typing import Any
 
 from product_recommender.utils.scrapers.base_scraper import BaseScraper
+
+logger = logging.getLogger(__name__)
+
+
+class AmazonConstants:
+    """Contants used by Amazon scraper."""
+
+    prod_cards = "puis-card-container"
+    brand = "a-size-mini s-line-clamp-1"
+    desc_box = "s-line-clamp"
+    price_tag = "a-offscreen"
+    rate_tag = "a-row a-size-small"
+    raters_tag = "a-link-normal s-underline-text s-underline-link-text s-link-style"
+    img_tag = "s-image"
 
 
 class AmazonScraper(BaseScraper):
@@ -22,80 +37,77 @@ class AmazonScraper(BaseScraper):
 
     def get_product_cards(self, soup: Any) -> Any:
         """Extract product card elements from the soup."""
-        product_cards = soup.find_all("div", class_="a-section a-spacing-base")
-        if not product_cards:
-            product_cards = soup.find_all(
-                "div", class_="a-section a-spacing-base a-text-center"
-            )
-        if not product_cards:
-            product_cards = soup.find_all(
-                lambda tag: tag.name == "div" and tag.get("class") == ["a-section"]
-            )
+        product_cards = soup.find_all("div", class_=AmazonConstants.prod_cards)
         return product_cards
 
-    def parse_product_card(self, product_card: Any, session: Any = None) -> Any:
+    def parse_product_card(self, product_card: Any) -> list[Any]:
         """Parse a single product card and extract product details."""
-        desc_box1 = product_card.find("h5", class_="s-line-clamp-1")
-        desc_box2 = product_card.find(
-            "span", class_="a-size-base-plus a-color-base a-text-normal"
+        brand = product_card.find("h2", class_=AmazonConstants.brand)
+        brand = brand.text + " | " if brand else ""
+        description_box = [
+            i
+            for i in product_card.find_all("a")
+            if AmazonConstants.desc_box in "".join(i["class"])
+        ][0]
+        if not description_box:
+            raise Exception("Description box not found.")
+        description = brand + description_box.text
+
+        product_link = (
+            "https://www.amazon.in" + description_box["href"].split("/ref=")[0]
         )
-        desc_box3 = product_card.find(
-            "span", class_="a-size-medium a-color-base a-text-normal"
-        )
-
-        if not any([desc_box1, desc_box2, desc_box3]):
-            return None
-
-        descrs = ""
-        if desc_box1:
-            descrs += desc_box1.text + " | "
-        if desc_box2:
-            descrs += desc_box2.text
-        if desc_box3:
-            descrs += desc_box3.text
-
-        link_tag = product_card.find(
-            "a",
-            class_=(
-                "a-link-normal s-underline-text s-underline-link-text "
-                "s-link-style a-text-normal"
-            ),
-        )
-        if not link_tag:
-            return None
-
-        prod_link = "https://www.amazon.in" + link_tag["href"].split("/ref=")[0]
-        price_tag = product_card.find("span", class_="a-price-whole")
+        price_tag = product_card.find("span", class_=AmazonConstants.price_tag)
         if not price_tag:
-            return None
+            logger.debug(
+                "Skipping scraping product with url: "
+                f"{product_link} because price data not found."
+            )
+            return []
+        price = int(round(float(price_tag.text[1:].replace(",", "")), 0))
 
-        rate_tag = product_card.find("span", class_="a-icon-alt")
-        raters_tag = product_card.find("span", class_="a-size-base s-underline-text")
+        rate_tag = product_card.find("div", class_=AmazonConstants.rate_tag)
+        raters_tag = product_card.find("a", class_=AmazonConstants.raters_tag)
 
         if not rate_tag or not raters_tag:
-            return None
-
-        try:
-            price = int(round(float(price_tag.text.replace(",", "")), 0))
-            rating = float(rate_tag.text.split()[0])
-            raters = int(
-                raters_tag.text.replace(",", "").replace("(", "").replace(")", "")
+            logger.debug(
+                f"Skipping scraping product with url: "
+                f"{product_link} because rating data not found."
             )
-            if raters < 30:
-                return None
+            return []
 
-            img_tag = product_card.find("img", class_="s-image")
-            img_url = img_tag["src"] if img_tag else None
+        rating = float(rate_tag.text[:3])
+        raters = (
+            raters_tag.text.strip().replace(",", "").replace("(", "").replace(")", "")
+        )
+        if raters.endswith("K"):
+            raters = float(raters[:-1]) * 1000
+        elif raters.isdecimal():
+            raters = int(raters)
+        else:
+            logger.debug(
+                "Skipping scraping product with url: "
+                f"{product_link} because '{raters}' is not a valid decimal string"
+            )
+            return []
+        if raters < 30:
+            logger.debug(
+                "Skipping scraping product with url: "
+                f"{product_link} because only {raters} (<30) people have rated it."
+            )
+            return []
 
-            return [
+        image_tag = product_card.find("img", class_=AmazonConstants.img_tag)
+        image_url = image_tag["src"] if image_tag else None
+
+        return [
+            [
                 self.platform_name,
-                descrs,
-                prod_link,
+                description,
+                product_link,
                 price,
                 rating,
                 raters,
                 None,
-                img_url,
+                image_url,
             ]
-        except Exception:
-            return None
+        ]
