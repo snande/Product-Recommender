@@ -1,16 +1,15 @@
 """Display functions for presenting product data in Product Recommender."""
 
 from io import BytesIO
-from typing import Any
 
+import pandas as pd
 import streamlit as st
-from pandas import DataFrame
 from PIL import Image
 
-# ruff: noqa: E501
+from product_recommender.utils.helpers import get_html
 
 
-def display_data(df: DataFrame, session: Any) -> None:
+def display_data(df: pd.DataFrame) -> None:
     """Display product data in a sorted and formatted manner using Streamlit."""
     df_rat = df.sort_values(
         ["scaled_rating", "composite", "vfm", "raters", "reviewers"],
@@ -32,19 +31,19 @@ def display_data(df: DataFrame, session: Any) -> None:
     ).head(5)
 
     st.subheader("Best Products by Rating")
-    _display_dataframe(df_rat, session)
+    _display_dataframe(df_rat)
 
     st.subheader("Best Products by Value for Money")
-    _display_dataframe(df_vfm, session)
+    _display_dataframe(df_vfm)
 
     st.subheader("Best Products by Composite Rating")
-    _display_dataframe(df_com, session)
+    _display_dataframe(df_com)
 
     st.subheader("Entire Data Extract")
     st.dataframe(df)
 
 
-def _display_dataframe(df, session):
+def _display_dataframe(df: pd.DataFrame) -> None:
     for row_index in range(len(df)):
         col1, col2 = st.columns([4, 1])
         col1.write(
@@ -52,11 +51,32 @@ def _display_dataframe(df, session):
     {row_index + 1}. [{df.loc[row_index, "description"]}]({df.loc[row_index, "link"]})  
     **Platform** : {df.loc[row_index, "platform"]}  
     **Price** : {df.loc[row_index, "price"]} Rs.  
-    **Rating** : {round(df.loc[row_index, "scaled_rating"], 2)}  
-    **Value for Money** : {round(df.loc[row_index, "vfm"], 2)}  
-    **Composite Rating** : {round(df.loc[row_index, "composite"], 2)}"""
+    **Rating** : {
+                round(
+                    float(
+                        pd.to_numeric(
+                            df.loc[row_index, "scaled_rating"], errors="coerce"
+                        )
+                    ),
+                    2,
+                )
+            }  
+    **Value for Money** : {
+                round(
+                    float(pd.to_numeric(df.loc[row_index, "vfm"], errors="coerce")), 2
+                )
+            }  
+    **Composite Rating** : {
+                round(
+                    float(
+                        pd.to_numeric(df.loc[row_index, "composite"], errors="coerce")
+                    ),
+                    2,
+                )
+            }"""  # noqa: W291
         )
-        image_response = session.get(df.loc[row_index, "image_url"])
+        image_url = str(df.loc[row_index, "image_url"])
+        image_response = get_html(image_url)
         img: Image.Image = Image.open(BytesIO(image_response.content))
         width, height = img.size
         resize_len = width if width >= height else height

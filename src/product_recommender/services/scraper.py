@@ -3,20 +3,19 @@
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
-from requests import Session
 
 from product_recommender.utils.scrapers.amazon_scraper import AmazonScraper
 from product_recommender.utils.scrapers.flipkart_scraper import FlipkartScraper
 
 
-def get_all_products(search_term: str, session: Session) -> pd.DataFrame:
+def get_all_products(search_term: str) -> pd.DataFrame:
     """Get all products from Amazon and Flipkart for a given search term."""
     amazon_scraper = AmazonScraper()
     flipkart_scraper = FlipkartScraper()
 
     with ThreadPoolExecutor(max_workers=10) as executor:
-        amazon_future = executor.submit(amazon_scraper.scrape, search_term, session)
-        flipkart_future = executor.submit(flipkart_scraper.scrape, search_term, session)
+        amazon_future = executor.submit(amazon_scraper.scrape, search_term)
+        flipkart_future = executor.submit(flipkart_scraper.scrape, search_term)
 
         amazon_df = amazon_future.result()
         flipkart_df = flipkart_future.result()

@@ -40,7 +40,7 @@ class AmazonScraper(BaseScraper):
         product_cards = soup.find_all("div", class_=AmazonConstants.prod_cards)
         return product_cards
 
-    def parse_product_card(self, product_card: Any, session: Any = None) -> list[Any]:
+    def parse_product_card(self, product_card: Any) -> list[Any]:
         """Parse a single product card and extract product details."""
         brand = product_card.find("h2", class_=AmazonConstants.brand)
         brand = brand.text + " | " if brand else ""
@@ -81,7 +81,14 @@ class AmazonScraper(BaseScraper):
         )
         if raters.endswith("K"):
             raters = float(raters[:-1]) * 1000
-        raters = int(raters)
+        elif raters.isdecimal():
+            raters = int(raters)
+        else:
+            logger.debug(
+                "Skipping scraping product with url: "
+                f"{product_link} because '{raters}' is not a valid decimal string"
+            )
+            return []
         if raters < 30:
             logger.debug(
                 "Skipping scraping product with url: "

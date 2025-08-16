@@ -8,8 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pandas as pd
-import requests
 from bs4 import BeautifulSoup
+
+from product_recommender.utils.helpers import get_html
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +21,11 @@ class BaseScraper(ABC):
     def scrape(
         self,
         search_term: str,
-        session: requests.Session,
         num_pages: int = 6,
     ) -> pd.DataFrame:
         """Scrape products for a search term using the implemented methods."""
         df_list = self._process_pages_in_parallel(
-            search_term=search_term, num_pages=num_pages, session=session, num_threads=5
+            search_term=search_term, num_pages=num_pages, num_threads=5
         )
         logger.info(f" Found total {len(df_list)} products in {self.platform_name}")
 
@@ -44,18 +44,17 @@ class BaseScraper(ABC):
             ],
         )
 
-    def _get_response_text(self, session: requests.Session, url: str) -> Any:
+    def _get_response_text(self, url: str) -> Any:
         attempts = 1
         start_time = time.time()
         while (time.time() - start_time) < 100:
-            response = session.get(url)
+            response = get_html(url)
             if response.status_code == 200:
                 logger.debug(
                     f"Request succeeded after trying {attempts} times for url: {url}"
                 )
                 return response.text
-            logger.warning(
-            f"Request failed at {attempts} attempt for url: {url}")
+            logger.warning(f"Request failed at {attempts} attempt for url: {url}")
             delay = random.uniform(0.1, 5.5)
             time.sleep(delay)
             attempts += 1
@@ -75,9 +74,7 @@ class BaseScraper(ABC):
         pass
 
     @abstractmethod
-    def parse_product_card(
-        self, product_card: Any, session: requests.Session | None = None
-    ) -> list[Any]:
+    def parse_product_card(self, product_card: Any) -> list[Any]:
         """Parse a single product card and extract product details."""
         pass
 
@@ -88,23 +85,25 @@ class BaseScraper(ABC):
         pass
 
     def _process_cards_in_parallel(
-        self, cards: Any, sesssion: requests.Session, num_threads: int = 10
-    ) -> list:
+        self, cards: Any, num_threads: int = 10
+    ) -> list[list[Any]]:
         futures = []
-        parsed_products = []
+        parsed_products: list[list[Any]] = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for card in cards:
-                futures.append(executor.submit(self.parse_product_card, card, sesssion))
+                futures.append(executor.submit(self.parse_product_card, card))
 
             for future in futures:
                 if future.result():
                     parsed_products = parsed_products + future.result()
         return parsed_products
 
-    def _process_one_page(self, search_term: str, page: int, session: requests.Session):
-        logger.info(f"Starting scraping for page: {page} on platform {self.platform_name}")
+    def _process_one_page(self, search_term: str, page: int) -> list[list[Any]] | None:
+        logger.info(
+            f"Starting scraping for page: {page} on platform {self.platform_name}"
+        )
         url = self.get_search_url(search_term, page)
-        html = self._get_response_text(session, url)
+        html = self._get_response_text(url)
         if not html:
             logger.warning(
                 f"Skipping crawling url: {url} because of multiple failed attempts."
@@ -112,12 +111,16 @@ class BaseScraper(ABC):
             return None
         soup = BeautifulSoup(html, "html.parser")
         cards = self.get_product_cards(soup)
-        logger.debug(f"Found {len(cards)} product cards in page: {page} on platform {self.platform_name}")
-
-        parsed_products = self._process_cards_in_parallel(
-            cards=cards, sesssion=session, num_threads=5
+        logger.debug(
+            f"Found {len(cards)} product cards in\
+             page: {page} on platform {self.platform_name}"
         )
-        logger.info(f"Found {len(parsed_products)} products on page: {page} for platform: {self.platform_name}")
+
+        parsed_products = self._process_cards_in_parallel(cards=cards, num_threads=5)
+        logger.info(
+            f"Found {len(parsed_products)} products\
+             on page: {page} for platform: {self.platform_name}"
+        )
         parsed_products = [product + [page] for product in parsed_products]
         return parsed_products
 
@@ -125,11 +128,10 @@ class BaseScraper(ABC):
         self,
         search_term: str,
         num_pages: int,
-        session: requests.Session,
         num_threads: int = 10,
-    ):
+    ) -> list[list[Any]]:
         futures = []
-        df_list = []
+        df_list: list[list[Any]] = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for page in range(1, num_pages + 1):
                 futures.append(
@@ -137,11 +139,11 @@ class BaseScraper(ABC):
                         self._process_one_page,
                         search_term=search_term,
                         page=page,
-                        session=session,
                     )
                 )
 
             for future in futures:
-                if future.result():
-                    df_list = df_list + future.result()
+                result = future.result()
+                if result is not None:
+                    df_list = df_list + result
         return df_list
